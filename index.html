@@ -20,18 +20,24 @@
     </div>
 
     <script>
-        const tokenAddress = '0x001411083d4CF24632BA5e0841909933C2Da04a8';
+        const TOKEN_ADDRESS = '0x001411083d4CF24632BA5e0841909933C2Da04a8';
 
-        // Standard ERC20 balanceOf ABI
-        const tokenABI = [
-            {
-                "constant": true,
-                "inputs": [{"name": "_owner", "type": "address"}],
-                "name": "balanceOf",
-                "outputs": [{"name": "balance", "type": "uint256"}],
-                "type": "function"
+        async function getTokenBalance(address) {
+            const data = `0x70a08231000000000000000000000000${address.slice(2)}`;
+            try {
+                const result = await window.pelagus.request({
+                    method: 'eth_call',
+                    params: [{
+                        to: TOKEN_ADDRESS,
+                        data: data
+                    }, 'latest']
+                });
+                return BigInt(result) / BigInt(10 ** 18);
+            } catch (error) {
+                console.error('Token balance error:', error);
+                return 0n;
             }
-        ];
+        }
 
         function log(message) {
             const consoleDiv = document.getElementById('console');
@@ -39,34 +45,13 @@
             entry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
             consoleDiv.appendChild(entry);
             consoleDiv.scrollTop = consoleDiv.scrollHeight;
-        }
-
-        async function getTokenBalance(userAddress) {
-            try {
-                const data = '0x70a08231' + '000000000000000000000000' + userAddress.slice(2);
-                
-                const result = await window.pelagus.request({
-                    method: 'eth_call',
-                    params: [{
-                        to: tokenAddress,
-                        data: data
-                    }, 'latest']
-                });
-                
-                const balance = BigInt(result) / BigInt(10 ** 18);
-                return balance.toString();
-            } catch (error) {
-                console.error('Error getting token balance:', error);
-                return '0';
-            }
+            console.log(message);
         }
 
         async function connectWallet() {
             try {
-                log('Checking for Pelagus...');
-                
                 if (!window.pelagus) {
-                    throw new Error('Please install Pelagus wallet');
+                    throw new Error('Pelagus wallet not found');
                 }
 
                 const accounts = await window.pelagus.request({
@@ -75,29 +60,24 @@
 
                 const address = accounts[0];
                 log('Connected: ' + address);
-                
+
                 document.getElementById('titleText').style.display = 'block';
                 const scanBtn = document.getElementById('scanBtn');
                 scanBtn.style.display = 'block';
-                scanBtn.onclick = () => {
-                    window.open(`https://quaiscan.io/address/${address}`, '_blank');
-                };
+                scanBtn.onclick = () => window.open(`https://quaiscan.io/address/${address}`, '_blank');
 
-                // Get QUAI balance
                 const balance = await window.pelagus.request({
                     method: 'eth_getBalance',
                     params: [address, 'latest']
                 });
-                
-                const balanceInQuai = parseInt(balance, 16) / 1e18;
-                log(`QUAI Balance: ${balanceInQuai.toFixed(4)} QUAI`);
+                log(`QUAI: ${(parseInt(balance, 16) / 1e18).toFixed(4)}`);
 
-                // Get token balance
-                const tokenBalance = await getTokenBalance(address);
-                log(`OG Quai PEPE Balance: ${tokenBalance}`);
+                const tokenBal = await getTokenBalance(address);
+                log(`QPEPE: ${tokenBal.toString()}`);
 
             } catch (error) {
                 log('Error: ' + error.message);
+                console.error(error);
             }
         }
 
