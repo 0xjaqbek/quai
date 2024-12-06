@@ -32,7 +32,8 @@
                         data: data
                     }, 'latest']
                 });
-                return BigInt(result) / BigInt(10 ** 18);
+                const balance = BigInt(result) / BigInt(10 ** 18);
+                return balance;
             } catch (error) {
                 console.error('Token balance error:', error);
                 return 0n;
@@ -45,7 +46,6 @@
             entry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
             consoleDiv.appendChild(entry);
             consoleDiv.scrollTop = consoleDiv.scrollHeight;
-            console.log(message);
         }
 
         async function connectWallet() {
@@ -73,7 +73,11 @@
                 log(`QUAI: ${(parseInt(balance, 16) / 1e18).toFixed(4)}`);
 
                 const tokenBal = await getTokenBalance(address);
-                log(`QPEPE: ${tokenBal.toString()}`);
+                if (tokenBal === 0n) {
+                    log('No OG Quai PEPE tokens found in your wallet!');
+                } else {
+                    log(`QPEPE: ${tokenBal.toString()}`);
+                }
 
             } catch (error) {
                 log('Error: ' + error.message);
