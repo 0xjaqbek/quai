@@ -42,10 +42,10 @@
             left: 0;
             width: 100%;
             height: 100%;
-            object-fit: contain; /* Ensure the full image is visible at all times */
-            animation: scale-down 24s infinite; /* Total duration: 8s per image */
+            object-fit: cover; /* Start by covering the entire screen width */
+            animation: scale-transition 24s infinite; /* Total duration: 8s per image */
             z-index: 1;
-            opacity: 0;
+            opacity: 0; /* Start hidden */
         }
 
         /* Assign animation delays for sequencing */
@@ -66,21 +66,22 @@
         }
 
         /* Scaling animation */
-        @keyframes scale-down {
+        @keyframes scale-transition {
             0% {
-                transform: scale(1); /* Full size */
+                transform: scale(1.2); /* Upscaled to fit the screen width */
                 opacity: 1; /* Fully visible */
             }
             50% {
-                transform: scale(0.5); /* Shrink the image */
+                transform: scale(1); /* Scale down to fit the screen (contain) */
+                object-fit: contain; /* Switch to showing the entire image */
                 opacity: 1;
             }
             66.6% {
-                transform: scale(0.5);
+                transform: scale(1);
                 opacity: 0; /* Fade out */
             }
             100% {
-                transform: scale(1); /* Reset size */
+                transform: scale(1.2); /* Reset to upscaled */
                 opacity: 0; /* Fully hidden */
             }
         }
