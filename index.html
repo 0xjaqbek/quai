@@ -32,23 +32,25 @@
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: -1; /* Push behind content */
+            z-index: -1; /* Push slideshow behind content */
         }
 
-        /* Each image */
+        /* Styling for images */
         .slideshow img {
             position: absolute;
-            top: 0;
-            left: 50%; /* Start centered */
-            transform: translateX(-50%) scaleX(1); /* Center horizontally */
-            width: 100vw; /* Start scaled to viewport width */
-            height: auto; /* Maintain aspect ratio */
-            animation: scale-down 24s infinite; /* Total cycle */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(1.5); /* Start with upscaled width */
+            width: auto; /* Maintain aspect ratio */
+            height: auto;
+            min-width: 100vw; /* Ensure full screen width initially */
+            min-height: 100vh; /* Ensure image always covers height */
+            animation: scale-and-fade 24s infinite; /* Animate the scaling and transition */
             z-index: 1;
-            opacity: 0; /* Start invisible */
+            opacity: 0; /* Start as invisible */
         }
 
-        /* Assign delays for timing */
+        /* Set delays for image sequence */
         .slideshow img:nth-child(1) {
             animation-delay: 0s;
             z-index: 3;
@@ -64,26 +66,24 @@
             z-index: 1;
         }
 
-        /* Animation to scale down and fade out */
-        @keyframes scale-down {
+        /* Keyframe animation for scaling and fading */
+        @keyframes scale-and-fade {
             0% {
-                transform: translateX(-50%) scaleX(1); /* Full width (100vw) */
+                transform: translate(-50%, -50%) scale(1.5); /* Upscaled */
                 opacity: 1; /* Fully visible */
             }
             50% {
-                transform: translateX(-50%) scaleY(1); /* Scale down to fit height (100vh) */
-                opacity: 1; /* Still visible */
+                transform: translate(-50%, -50%) scale(1); /* Scaled down to fit */
+                opacity: 1; /* Fully visible */
             }
             66.6% {
-                transform: translateX(-50%) scaleY(1); /* Fully scaled down */
-                opacity: 0; /* Start dissolving */
+                opacity: 0; /* Begin fading out */
             }
             100% {
-                transform: translateX(-50%) scaleX(1); /* Reset to full width */
+                transform: translate(-50%, -50%) scale(1.5); /* Reset to upscaled */
                 opacity: 0; /* Fully hidden */
             }
         }
-
         .container {background:white;padding:2rem;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.1);width:90%;max-width:400px}
         .title {text-align:center;color:#ff0000;font-size:1.5rem;margin-bottom:1rem;font-weight:bold;display:none}
         .btn-connect {background:#4F46E5;color:white;border:none;padding:12px 24px;border-radius:6px;width:100%;cursor:pointer;font-size:16px;margin-bottom:1rem}
