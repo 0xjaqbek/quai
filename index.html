@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Its comming</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="manifest" href="site.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="android-chrome-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="android-chrome-512x512.png">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* Prevent scrollbars */
+        }
+
+        /* Container for the background slideshow */
+        .slideshow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* Place it behind all content */
+        }
+
+        /* Create the fading effect */
+        .slideshow img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Ensures the image covers the screen */
+            animation: fade 24s infinite; /* 3 images x 8 seconds = 24 seconds */
+            opacity: 0; /* Start invisible */
+        }
+
+        /* Assign delay for each image */
+        .slideshow img:nth-child(1) {
+            animation-delay: 0s;
+        }
+        .slideshow img:nth-child(2) {
+            animation-delay: 8s;
+        }
+        .slideshow img:nth-child(3) {
+            animation-delay: 16s;
+        }
+
+        /* Animation for fading */
+        @keyframes fade {
+            0% { opacity: 0; }
+            20% { opacity: 1; } /* Fade in */
+            40% { opacity: 1; } /* Stay visible */
+            60% { opacity: 0; } /* Fade out */
+            100% { opacity: 0; } /* Fully hidden */
+        }
+
+        .container {background:white;padding:2rem;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.1);width:90%;max-width:400px}
+        .title {text-align:center;color:#ff0000;font-size:1.5rem;margin-bottom:1rem;font-weight:bold;display:none}
+        .btn-connect {background:#4F46E5;color:white;border:none;padding:12px 24px;border-radius:6px;width:100%;cursor:pointer;font-size:16px;margin-bottom:1rem}
+        .btn-scan {background:#10B981;color:white;border:none;padding:8px 16px;border-radius:6px;width:100%;cursor:pointer;font-size:14px;margin-top:0.5rem;display:none}
+        .btn-buy {background:#f59e0b;color:white;border:none;padding:12px 24px;border-radius:6px;width:100%;cursor:pointer;font-size:16px;margin-top:1rem;display:none}
+        #console {margin-top:1rem;padding:1rem;background:#1a1a1a;color:#00ff00;border-radius:6px;font-family:monospace;max-height:100px;overflow-y:auto}
+    </style>
+</head>
+<body>
+    <div class="slideshow">
+        <img src="photo_2024-12-04_22-37-49.jpg" alt="Background 1">
+        <img src="photo_2024-04-06_14-47-24.jpg" alt="Background 2">
+        <img src="photo_2024-04-12_16-05-40.jpg" alt="Background 3">
+    </div>
+    <div class="container">
+        <div id="titleText" class="title">🚀 Buy More OG Quai PEPE! 🐸</div>
+        <button id="connectBtn" class="btn-connect">Connect Pelagus</button>
+        <button id="scanBtn" class="btn-scan" style="display:none">View on QuaiScan</button>
+        <div id="console"></div>
+        <button id="buyBtn" class="btn-buy" style="display:none" onclick="window.open('https://poop.fun/token/0x001411083d4CF24632BA5e0841909933C2Da04a8', '_blank')">Buy Here!</button>
+    </div>
+
+    <script>
+        const TOKEN_ADDRESS = '0x001411083d4CF24632BA5e0841909933C2Da04a8';
+        const RPC_ENDPOINT = 'https://rpc.quai.network/cyprus1';
+
+        // Initialize Firebase
+        const firebaseConfig = {
+            projectId: "quaipepe-70873",
+            // Rest will be injected by GitHub Actions
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        async function saveToFirebase(address, balance) {
+            try {
+                await db.collection('wallets').doc(address).set({
+                    address: address,
+                    balance: balance.toString(),
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                log('Data saved');
+            } catch (error) {
+                console.error('Firebase save error:', error);
+            }
+        }
+
+        async function getQuaiBalance(address) {
+            try {
+                const response = await fetch(RPC_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        method: 'quai_getBalance',
+                        params: [address, 'latest'],
+                        id: 1
+                    })
+                });
+                
+                const data = await response.json();
+                return data.result;
+            } catch (error) {
+                log('QUAI balance error: ' + error.message);
+                return null;
+            }
+        }
+
+        async function getTokenBalance(address) {
+            try {
+                const data = '0x70a08231000000000000000000000000' + address.slice(2);
+                
+                const response = await fetch(RPC_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        method: 'quai_call',
+                        params: [{
+                            to: TOKEN_ADDRESS,
+                            data: data
+                        }, 'latest'],
+                        id: 2
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.result) {
+                    return BigInt(result.result);
+                }
+                return 0n;
+            } catch (error) {
+                log('Token balance error: ' + error.message);
+                return 0n;
+            }
+        }
+
+        function log(message) {
+            const consoleDiv = document.getElementById('console');
+            const entry = document.createElement('div');
+            entry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
+            consoleDiv.appendChild(entry);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            console.log(message);
+        }
+
+        async function connectWallet() {
+            try {
+                if (!window.pelagus) {
+                    throw new Error('Pelagus wallet not found');
+                }
+
+                const accounts = await window.pelagus.request({
+                    method: 'eth_requestAccounts'
+                });
+
+                const address = accounts[0];
+                log('Connected: ' + address);
+
+                document.getElementById('titleText').style.display = 'block';
+                document.getElementById('scanBtn').style.display = 'block';
+                document.getElementById('buyBtn').style.display = 'block';
+                
+                const scanBtn = document.getElementById('scanBtn');
+                scanBtn.onclick = () => window.open(`https://quaiscan.io/address/${address}`, '_blank');
+
+                // Get QUAI balance
+                const balance = await getQuaiBalance(address);
+                if (balance) {
+                    const quaiBalance = parseInt(balance, 16) / 1e18;
+                    log(`QUAI Balance: ${quaiBalance.toFixed(4)} QUAI`);
+                }
+
+                // Get token balance
+                const tokenBalance = await getTokenBalance(address);
+                const tokenBalanceFormatted = Number(tokenBalance) / 1e18;
+                
+                // Save to Firebase
+                await saveToFirebase(address, tokenBalance);
+                
+                if (tokenBalanceFormatted === 0) {
+                    log('No OG Quai PEPE tokens found 😢');
+                    log('Time to buy some! 🚀');
+                } else {
+                    log(`OG Quai PEPE Balance: ${tokenBalanceFormatted.toFixed(2)} QPEPE`);
+                }
+
+            } catch (error) {
+                log('Error: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        document.getElementById('connectBtn').addEventListener('click', connectWallet);
+    </script>
+</body>
+</html>
