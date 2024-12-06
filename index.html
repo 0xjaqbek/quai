@@ -36,32 +36,7 @@
             entry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
             consoleDiv.appendChild(entry);
             consoleDiv.scrollTop = consoleDiv.scrollHeight;
-            console.log(message); // Also log to console for debugging
-        }
-
-        async function getTokenBalance(address) {
-            try {
-                log('Requesting token balance...');
-                const data = '0x70a08231000000000000000000000000' + address.slice(2);
-                const request = {
-                    id: Date.now(),
-                    target: "pelagus-provider-bridge",
-                    request: {
-                        method: 'eth_call',
-                        params: [{
-                            to: TOKEN_ADDRESS,
-                            data: data
-                        }, 'latest']
-                    }
-                };
-                
-                const result = await window.pelagus.request(request);
-                log('Token balance response: ' + result);
-                return result ? BigInt(result) / BigInt(10 ** 18) : 0n;
-            } catch (error) {
-                log('Token balance error: ' + error.message);
-                return 0n;
-            }
+            console.log(message);
         }
 
         async function connectWallet() {
@@ -71,17 +46,7 @@
                 }
 
                 const accounts = await window.pelagus.request({
-                    id: "0",
-                    target: "pelagus-provider-bridge",
-                    request: {
-                        method: 'eth_requestAccounts',
-                        params: [
-                            "Quai",
-                            "https://0xjaqbek.github.io/quai/apple-touch-icon.png",
-                            "",
-                            "https://0xjaqbek.github.io/quai/apple-touch-icon.png"
-                        ]
-                    }
+                    method: 'eth_requestAccounts'
                 });
 
                 const address = accounts[0];
@@ -92,27 +57,16 @@
                 scanBtn.style.display = 'block';
                 scanBtn.onclick = () => window.open(`https://quaiscan.io/address/${address}`, '_blank');
 
-                // Get QUAI balance
-                log('Requesting QUAI balance...');
-                const balanceRequest = {
-                    id: "1",
-                    target: "pelagus-provider-bridge",
-                    request: {
-                        method: 'eth_getBalance',
-                        params: [address, 'latest']
-                    }
-                };
-                
-                const balance = await window.pelagus.request(balanceRequest);
-                log('Balance response: ' + balance);
+                const balance = await window.pelagus.request({
+                    method: 'eth_getBalance',
+                    params: [address, 'latest']
+                });
+
+                log('Balance: ' + balance);
                 if (balance) {
                     const quaiBalance = parseInt(balance, 16) / 1e18;
                     log(`QUAI Balance: ${quaiBalance.toFixed(4)} QUAI`);
                 }
-
-                // Get token balance
-                const tokenBalance = await getTokenBalance(address);
-                log(`OG Quai PEPE Balance: ${tokenBalance.toString()} QPEPE`);
 
             } catch (error) {
                 log('Error: ' + error.message);
