@@ -23,19 +23,29 @@
         const TOKEN_ADDRESS = '0x001411083d4CF24632BA5e0841909933C2Da04a8';
 
         async function getTokenBalance(address) {
-            const data = `0x70a08231000000000000000000000000${address.slice(2)}`;
             try {
+                log('Requesting token balance...');
+                const params = [{
+                    from: address,
+                    to: TOKEN_ADDRESS,
+                    data: '0x70a08231000000000000000000000000' + address.slice(2)
+                }, 'latest'];
+                
+                log('Making eth_call...');
                 const result = await window.pelagus.request({
                     method: 'eth_call',
-                    params: [{
-                        to: TOKEN_ADDRESS,
-                        data: data
-                    }, 'latest']
+                    params: params
                 });
-                const balance = BigInt(result) / BigInt(10 ** 18);
-                return balance;
+                
+                log('Raw result: ' + result);
+                if (result) {
+                    const balance = BigInt(result);
+                    log('Parsed balance: ' + balance.toString());
+                    return balance / BigInt(10 ** 18);
+                }
+                return 0n;
             } catch (error) {
-                console.error('Token balance error:', error);
+                log('Token balance error: ' + error.message);
                 return 0n;
             }
         }
@@ -46,6 +56,7 @@
             entry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
             consoleDiv.appendChild(entry);
             consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            console.log(message);
         }
 
         async function connectWallet() {
@@ -74,7 +85,7 @@
 
                 const tokenBal = await getTokenBalance(address);
                 if (tokenBal === 0n) {
-                    log('No OG Quai PEPE tokens found in your wallet!');
+                    log('No OG Quai PEPE tokens found');
                 } else {
                     log(`QPEPE: ${tokenBal.toString()}`);
                 }
