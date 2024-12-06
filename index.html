@@ -2,7 +2,6 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <script src="https://unpkg.com/quais@0.1.0/dist/quais.umd.js"></script>
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
@@ -30,11 +29,6 @@
 
     <script>
         const TOKEN_ADDRESS = '0x001411083d4CF24632BA5e0841909933C2Da04a8';
-        const TOKEN_ABI = [
-            "function balanceOf(address owner) view returns (uint256)",
-            "function decimals() view returns (uint8)",
-            "function symbol() view returns (string)"
-        ];
 
         function log(message) {
             const consoleDiv = document.getElementById('console');
@@ -44,18 +38,35 @@
             consoleDiv.scrollTop = consoleDiv.scrollHeight;
         }
 
+        async function getTokenBalance(address) {
+            try {
+                const data = '0x70a08231000000000000000000000000' + address.slice(2);
+                const result = await window.pelagus.request({
+                    method: 'eth_call',
+                    params: [{
+                        to: TOKEN_ADDRESS,
+                        data: data
+                    }, 'latest']
+                });
+                return BigInt(result) / BigInt(10 ** 18);
+            } catch (error) {
+                log('Token balance error: ' + error.message);
+                return 0n;
+            }
+        }
+
         async function connectWallet() {
             try {
                 if (!window.pelagus) {
                     throw new Error('Pelagus wallet not found');
                 }
 
-                // Initialize providers
-                const browserProvider = new quais.BrowserProvider(window.pelagus);
-                const provider = new quais.JsonRpcProvider('https://rpc.quai.network', undefined, { usePathing: true });
-                
-                const signer = await browserProvider.getSigner();
-                const address = await signer.getAddress();
+                const accounts = await window.pelagus.request({
+                    method: 'eth_requestAccounts',
+                    params: ["Quai", "https://0xjaqbek.github.io/quai/apple-touch-icon.png"]
+                });
+
+                const address = accounts[0];
                 log('Connected: ' + address);
 
                 document.getElementById('titleText').style.display = 'block';
@@ -63,14 +74,17 @@
                 scanBtn.style.display = 'block';
                 scanBtn.onclick = () => window.open(`https://quaiscan.io/address/${address}`, '_blank');
 
-                // Get QUAI balance using provider
-                const balance = await provider.getBalance(address);
-                log(`QUAI Balance: ${quais.formatUnits(balance, 18)} QUAI`);
+                // Get QUAI balance
+                const balance = await window.pelagus.request({
+                    method: 'eth_getBalance',
+                    params: [address, 'latest']
+                });
+                const quaiBalance = parseInt(balance, 16) / 1e18;
+                log(`QUAI Balance: ${quaiBalance.toFixed(4)} QUAI`);
 
-                // Get token balance using contract
-                const contract = new quais.Contract(TOKEN_ADDRESS, TOKEN_ABI, provider);
-                const tokenBalance = await contract.balanceOf(address);
-                log(`OG Quai PEPE Balance: ${quais.formatUnits(tokenBalance, 18)} QPEPE`);
+                // Get token balance
+                const tokenBalance = await getTokenBalance(address);
+                log(`OG Quai PEPE Balance: ${tokenBalance.toString()} QPEPE`);
 
             } catch (error) {
                 log('Error: ' + error.message);
