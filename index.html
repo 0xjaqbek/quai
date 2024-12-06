@@ -29,14 +29,13 @@
 
     <script>
         const TOKEN_ADDRESS = '0x001411083d4CF24632BA5e0841909933C2Da04a8';
+        const RPC_ENDPOINT = 'https://rpc.quai.network/cyprus1';
 
         async function getQuaiBalance(address) {
             try {
-                const response = await fetch('https://rpc.quai.network/cyprus1', {
+                const response = await fetch(RPC_ENDPOINT, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         jsonrpc: '2.0',
                         method: 'quai_getBalance',
@@ -48,8 +47,38 @@
                 const data = await response.json();
                 return data.result;
             } catch (error) {
-                log('Balance fetch error: ' + error.message);
+                log('QUAI balance error: ' + error.message);
                 return null;
+            }
+        }
+
+        async function getTokenBalance(address) {
+            try {
+                // Create data for balanceOf(address) call
+                const data = '0x70a08231000000000000000000000000' + address.slice(2);
+                
+                const response = await fetch(RPC_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        method: 'quai_call',
+                        params: [{
+                            to: TOKEN_ADDRESS,
+                            data: data
+                        }, 'latest'],
+                        id: 2
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.result) {
+                    return BigInt(result.result);
+                }
+                return 0n;
+            } catch (error) {
+                log('Token balance error: ' + error.message);
+                return 0n;
             }
         }
 
@@ -80,11 +109,22 @@
                 scanBtn.style.display = 'block';
                 scanBtn.onclick = () => window.open(`https://quaiscan.io/address/${address}`, '_blank');
 
-                // Get QUAI balance using RPC endpoint
+                // Get QUAI balance
                 const balance = await getQuaiBalance(address);
                 if (balance) {
                     const quaiBalance = parseInt(balance, 16) / 1e18;
                     log(`QUAI Balance: ${quaiBalance.toFixed(4)} QUAI`);
+                }
+
+                // Get token balance
+                const tokenBalance = await getTokenBalance(address);
+                const tokenBalanceFormatted = Number(tokenBalance) / 1e18;
+                
+                if (tokenBalanceFormatted === 0) {
+                    log('No OG Quai PEPE tokens found 😢');
+                    log('Time to buy some! 🚀');
+                } else {
+                    log(`OG Quai PEPE Balance: ${tokenBalanceFormatted.toFixed(2)} QPEPE`);
                 }
 
             } catch (error) {
