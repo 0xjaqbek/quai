@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    
+    <title>Quai</title>
     <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
@@ -33,7 +33,10 @@
 
         async function getTokenBalance(address) {
             try {
+                // Token balance call
                 const data = '0x70a08231000000000000000000000000' + address.slice(2);
+                log('Checking token balance...');
+                
                 const result = await window.pelagus.request({
                     method: 'eth_call',
                     params: [{
@@ -41,11 +44,21 @@
                         data: data
                     }, 'latest']
                 });
-                return BigInt(result);
+                
+                log('Raw balance result: ' + result);
+                if (!result) return 0n;
+                
+                // Convert hex to BigInt
+                const balanceInWei = BigInt(result);
+                return balanceInWei;
             } catch (error) {
                 log('Token balance error: ' + error.message);
                 return 0n;
             }
+        }
+
+        function formatBalance(balance, decimals = 18) {
+            return (Number(balance) / 10 ** decimals).toFixed(4);
         }
 
         function log(message) {
@@ -54,6 +67,7 @@
             entry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
             consoleDiv.appendChild(entry);
             consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            console.log(message);
         }
 
         async function connectWallet() {
@@ -74,22 +88,26 @@
                 scanBtn.style.display = 'block';
                 scanBtn.onclick = () => window.open(`https://quaiscan.io/address/${address}`, '_blank');
 
-                const balance = await window.pelagus.request({
+                // Get QUAI balance
+                const quaiBalance = await window.pelagus.request({
                     method: 'eth_getBalance',
                     params: [address, 'latest']
                 });
-                log(`QUAI Balance: ${(parseInt(balance, 16) / 1e18).toFixed(4)}`);
+                const quaiBalanceFormatted = formatBalance(BigInt(quaiBalance));
+                log(`QUAI Balance: ${quaiBalanceFormatted} QUAI`);
 
-                const tokenBalRaw = await getTokenBalance(address);
-                const tokenBal = tokenBalRaw / BigInt(10 ** 18);
-                log(`OG Quai PEPE Balance: ${tokenBal.toString()} QPEPE`);
+                // Get token balance
+                const tokenBalanceWei = await getTokenBalance(address);
+                const tokenBalanceFormatted = formatBalance(tokenBalanceWei);
+                log(`OG Quai PEPE Balance: ${tokenBalanceFormatted} QPEPE`);
                 
-                if (tokenBal === 0n) {
+                if (Number(tokenBalanceFormatted) === 0) {
                     log(`Time to buy some QPEPE! 🚀`);
                 }
 
             } catch (error) {
                 log('Error: ' + error.message);
+                console.error('Detailed error:', error);
             }
         }
 
