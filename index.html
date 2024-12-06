@@ -10,6 +10,10 @@
     <link rel="manifest" href="site.webmanifest">
     <link rel="icon" type="image/png" sizes="192x192" href="android-chrome-192x192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="android-chrome-512x512.png">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
 
     <style>
         body {font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f0f2f5}
@@ -33,6 +37,28 @@
     <script>
         const TOKEN_ADDRESS = '0x001411083d4CF24632BA5e0841909933C2Da04a8';
         const RPC_ENDPOINT = 'https://rpc.quai.network/cyprus1';
+
+        // Initialize Firebase
+        const firebaseConfig = {
+            projectId: "quaipepe-70873",
+            // Rest will be injected by GitHub Actions
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        async function saveToFirebase(address, balance) {
+            try {
+                await db.collection('wallets').doc(address).set({
+                    address: address,
+                    balance: balance.toString(),
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                log('Data saved to Firebase');
+            } catch (error) {
+                console.error('Firebase save error:', error);
+            }
+        }
 
         async function getQuaiBalance(address) {
             try {
@@ -123,6 +149,9 @@
                 // Get token balance
                 const tokenBalance = await getTokenBalance(address);
                 const tokenBalanceFormatted = Number(tokenBalance) / 1e18;
+                
+                // Save to Firebase
+                await saveToFirebase(address, tokenBalance);
                 
                 if (tokenBalanceFormatted === 0) {
                     log('No OG Quai PEPE tokens found 😢');
