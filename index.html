@@ -36,19 +36,28 @@
             entry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
             consoleDiv.appendChild(entry);
             consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            console.log(message); // Also log to console for debugging
         }
 
         async function getTokenBalance(address) {
             try {
+                log('Requesting token balance...');
                 const data = '0x70a08231000000000000000000000000' + address.slice(2);
-                const result = await window.pelagus.request({
-                    method: 'eth_call',
-                    params: [{
-                        to: TOKEN_ADDRESS,
-                        data: data
-                    }, 'latest']
-                });
-                return BigInt(result) / BigInt(10 ** 18);
+                const request = {
+                    id: Date.now(),
+                    target: "pelagus-provider-bridge",
+                    request: {
+                        method: 'eth_call',
+                        params: [{
+                            to: TOKEN_ADDRESS,
+                            data: data
+                        }, 'latest']
+                    }
+                };
+                
+                const result = await window.pelagus.request(request);
+                log('Token balance response: ' + result);
+                return result ? BigInt(result) / BigInt(10 ** 18) : 0n;
             } catch (error) {
                 log('Token balance error: ' + error.message);
                 return 0n;
@@ -62,8 +71,17 @@
                 }
 
                 const accounts = await window.pelagus.request({
-                    method: 'eth_requestAccounts',
-                    params: ["Quai", "https://0xjaqbek.github.io/quai/apple-touch-icon.png"]
+                    id: "0",
+                    target: "pelagus-provider-bridge",
+                    request: {
+                        method: 'eth_requestAccounts',
+                        params: [
+                            "Quai",
+                            "https://0xjaqbek.github.io/quai/apple-touch-icon.png",
+                            "",
+                            "https://0xjaqbek.github.io/quai/apple-touch-icon.png"
+                        ]
+                    }
                 });
 
                 const address = accounts[0];
@@ -75,12 +93,22 @@
                 scanBtn.onclick = () => window.open(`https://quaiscan.io/address/${address}`, '_blank');
 
                 // Get QUAI balance
-                const balance = await window.pelagus.request({
-                    method: 'eth_getBalance',
-                    params: [address, 'latest']
-                });
-                const quaiBalance = parseInt(balance, 16) / 1e18;
-                log(`QUAI Balance: ${quaiBalance.toFixed(4)} QUAI`);
+                log('Requesting QUAI balance...');
+                const balanceRequest = {
+                    id: "1",
+                    target: "pelagus-provider-bridge",
+                    request: {
+                        method: 'eth_getBalance',
+                        params: [address, 'latest']
+                    }
+                };
+                
+                const balance = await window.pelagus.request(balanceRequest);
+                log('Balance response: ' + balance);
+                if (balance) {
+                    const quaiBalance = parseInt(balance, 16) / 1e18;
+                    log(`QUAI Balance: ${quaiBalance.toFixed(4)} QUAI`);
+                }
 
                 // Get token balance
                 const tokenBalance = await getTokenBalance(address);
