@@ -20,12 +20,45 @@
     </div>
 
     <script>
+        const tokenAddress = '0x001411083d4CF24632BA5e0841909933C2Da04a8';
+
+        // Standard ERC20 balanceOf ABI
+        const tokenABI = [
+            {
+                "constant": true,
+                "inputs": [{"name": "_owner", "type": "address"}],
+                "name": "balanceOf",
+                "outputs": [{"name": "balance", "type": "uint256"}],
+                "type": "function"
+            }
+        ];
+
         function log(message) {
             const consoleDiv = document.getElementById('console');
             const entry = document.createElement('div');
             entry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
             consoleDiv.appendChild(entry);
             consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+
+        async function getTokenBalance(userAddress) {
+            try {
+                const data = '0x70a08231' + '000000000000000000000000' + userAddress.slice(2);
+                
+                const result = await window.pelagus.request({
+                    method: 'eth_call',
+                    params: [{
+                        to: tokenAddress,
+                        data: data
+                    }, 'latest']
+                });
+                
+                const balance = BigInt(result) / BigInt(10 ** 18);
+                return balance.toString();
+            } catch (error) {
+                console.error('Error getting token balance:', error);
+                return '0';
+            }
         }
 
         async function connectWallet() {
@@ -50,13 +83,18 @@
                     window.open(`https://quaiscan.io/address/${address}`, '_blank');
                 };
 
+                // Get QUAI balance
                 const balance = await window.pelagus.request({
                     method: 'eth_getBalance',
                     params: [address, 'latest']
                 });
                 
                 const balanceInQuai = parseInt(balance, 16) / 1e18;
-                log(`Balance: ${balanceInQuai.toFixed(4)} QUAI`);
+                log(`QUAI Balance: ${balanceInQuai.toFixed(4)} QUAI`);
+
+                // Get token balance
+                const tokenBalance = await getTokenBalance(address);
+                log(`OG Quai PEPE Balance: ${tokenBalance}`);
 
             } catch (error) {
                 log('Error: ' + error.message);
