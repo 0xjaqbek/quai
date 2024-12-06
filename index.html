@@ -32,7 +32,7 @@
                         data: data
                     }, 'latest']
                 });
-                return BigInt(result) / BigInt(10 ** 18);
+                return BigInt(result);
             } catch (error) {
                 log('Token balance error: ' + error.message);
                 return 0n;
@@ -69,14 +69,14 @@
                     method: 'eth_getBalance',
                     params: [address, 'latest']
                 });
-                log(`QUAI: ${(parseInt(balance, 16) / 1e18).toFixed(4)}`);
+                log(`QUAI Balance: ${(parseInt(balance, 16) / 1e18).toFixed(4)}`);
 
-                const tokenBal = await getTokenBalance(address);
+                const tokenBalRaw = await getTokenBalance(address);
+                const tokenBal = tokenBalRaw / BigInt(10 ** 18);
+                log(`OG Quai PEPE Balance: ${tokenBal.toString()} QPEPE`);
+                
                 if (tokenBal === 0n) {
-                    log(`You don't have any OG Quai PEPE tokens yet!`);
-                    log(`Buy some now to join the community! 🚀`);
-                } else {
-                    log(`QPEPE: ${tokenBal.toString()}`);
+                    log(`Time to buy some QPEPE! 🚀`);
                 }
 
             } catch (error) {
