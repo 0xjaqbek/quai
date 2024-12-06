@@ -54,7 +54,7 @@
                     balance: balance.toString(),
                     lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                log('Data saved to Firebase');
+                log('Data saved');
             } catch (error) {
                 console.error('Firebase save error:', error);
             }
