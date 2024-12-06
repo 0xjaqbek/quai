@@ -24,26 +24,15 @@
 
         async function getTokenBalance(address) {
             try {
-                log('Requesting token balance...');
-                const params = [{
-                    from: address,
-                    to: TOKEN_ADDRESS,
-                    data: '0x70a08231000000000000000000000000' + address.slice(2)
-                }, 'latest'];
-                
-                log('Making eth_call...');
+                const data = '0x70a08231000000000000000000000000' + address.slice(2);
                 const result = await window.pelagus.request({
                     method: 'eth_call',
-                    params: params
+                    params: [{
+                        to: TOKEN_ADDRESS,
+                        data: data
+                    }, 'latest']
                 });
-                
-                log('Raw result: ' + result);
-                if (result) {
-                    const balance = BigInt(result);
-                    log('Parsed balance: ' + balance.toString());
-                    return balance / BigInt(10 ** 18);
-                }
-                return 0n;
+                return BigInt(result) / BigInt(10 ** 18);
             } catch (error) {
                 log('Token balance error: ' + error.message);
                 return 0n;
@@ -56,7 +45,6 @@
             entry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
             consoleDiv.appendChild(entry);
             consoleDiv.scrollTop = consoleDiv.scrollHeight;
-            console.log(message);
         }
 
         async function connectWallet() {
@@ -85,14 +73,14 @@
 
                 const tokenBal = await getTokenBalance(address);
                 if (tokenBal === 0n) {
-                    log('No OG Quai PEPE tokens found');
+                    log(`You don't have any OG Quai PEPE tokens yet!`);
+                    log(`Buy some now to join the community! 🚀`);
                 } else {
                     log(`QPEPE: ${tokenBal.toString()}`);
                 }
 
             } catch (error) {
                 log('Error: ' + error.message);
-                console.error(error);
             }
         }
 
