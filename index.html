@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f0f2f5}
+        .container {background:white;padding:2rem;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.1);width:90%;max-width:400px}
+        .title {text-align:center;color:#ff0000;font-size:1.5rem;margin-bottom:1rem;font-weight:bold;display:none}
+        .btn-connect {background:#4F46E5;color:white;border:none;padding:12px 24px;border-radius:6px;width:100%;cursor:pointer;font-size:16px;margin-bottom:1rem}
+        .btn-scan {background:#10B981;color:white;border:none;padding:8px 16px;border-radius:6px;width:100%;cursor:pointer;font-size:14px;margin-top:0.5rem;display:none}
+        #console {margin-top:1rem;padding:1rem;background:#1a1a1a;color:#00ff00;border-radius:6px;font-family:monospace;max-height:100px;overflow-y:auto}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="titleText" class="title">🚀 Buy OG Quai PEPE! 🐸</div>
+        <button id="connectBtn" class="btn-connect">Connect Pelagus</button>
+        <button id="scanBtn" class="btn-scan" style="display:none">View on QuaiScan</button>
+        <div id="console"></div>
+    </div>
+
+    <script>
+        function log(message) {
+            const consoleDiv = document.getElementById('console');
+            const entry = document.createElement('div');
+            entry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
+            consoleDiv.appendChild(entry);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+        }
+
+        async function connectWallet() {
+            try {
+                log('Checking for Pelagus...');
+                
+                if (!window.pelagus) {
+                    throw new Error('Please install Pelagus wallet');
+                }
+
+                const accounts = await window.pelagus.request({
+                    method: 'eth_requestAccounts'
+                });
+
+                const address = accounts[0];
+                log('Connected: ' + address);
+                
+                document.getElementById('titleText').style.display = 'block';
+                const scanBtn = document.getElementById('scanBtn');
+                scanBtn.style.display = 'block';
+                scanBtn.onclick = () => {
+                    window.open(`https://quaiscan.io/address/${address}`, '_blank');
+                };
+
+                const balance = await window.pelagus.request({
+                    method: 'eth_getBalance',
+                    params: [address, 'latest']
+                });
+                
+                const balanceInQuai = parseInt(balance, 16) / 1e18;
+                log(`Balance: ${balanceInQuai.toFixed(4)} QUAI`);
+
+            } catch (error) {
+                log('Error: ' + error.message);
+            }
+        }
+
+        document.getElementById('connectBtn').addEventListener('click', connectWallet);
+    </script>
+</body>
+</html>
