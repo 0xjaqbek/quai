@@ -348,9 +348,12 @@
         // Event Listeners
         document.getElementById('connectBtn').addEventListener('click', connectWallet);
         document.getElementById('discordBtn').addEventListener('click', () => {
-            log('Redirecting to Discord...');
-            window.location.href = DISCORD_OAUTH_URL;
-        });
+    console.log('Discord button clicked');
+    console.log('DISCORD_CLIENT_ID:', DISCORD_CLIENT_ID);
+    console.log('REDIRECT_URI:', REDIRECT_URI);
+    console.log('Full OAuth URL:', DISCORD_OAUTH_URL);
+    window.location.href = DISCORD_OAUTH_URL;
+});
 
         // Check for Discord callback on page load
         if (window.location.hash.includes('access_token')) {
