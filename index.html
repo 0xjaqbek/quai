@@ -352,7 +352,10 @@
     console.log('DISCORD_CLIENT_ID:', DISCORD_CLIENT_ID);
     console.log('REDIRECT_URI:', REDIRECT_URI);
     console.log('Full OAuth URL:', DISCORD_OAUTH_URL);
-    window.location.href = DISCORD_OAUTH_URL;
+    
+    // Open Discord OAuth in a new window
+    window.open(DISCORD_OAUTH_URL, 'Discord Login', 
+        'width=500,height=700,status=yes,scrollbars=yes');
 });
 
         // Check for Discord callback on page load
