@@ -183,21 +183,50 @@
         const DISCORD_OAUTH_URL = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=token&scope=identify`;
 
         async function saveToFirebase(data) {
-            try {
-                const docRef = data.discordId ? 
-                    `discord_${data.discordId}` : 
-                    `wallet_${data.address}`;
+    try {
+        let docRef;
+        let docData = {
+            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+        };
 
-                await db.collection('users').doc(docRef).set({
-                    ...data,
-                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-                }, { merge: true });
-                
-                log('Data saved');
-            } catch (error) {
-                console.error('Firebase save error:', error);
+        // If this is Discord data
+        if (data.type === 'discord') {
+            docRef = `user_${data.discordId}`;
+            docData.discord = {
+                id: data.discordId,
+                username: data.username,
+                discriminator: data.discriminator,
+                avatar: data.avatar
+            };
+        }
+        // If this is wallet data
+        else if (data.type === 'wallet') {
+            // If we already have Discord data, update the existing doc
+            if (window.currentDiscordId) {
+                docRef = `user_${window.currentDiscordId}`;
+                docData.wallet = {
+                    address: data.address,
+                    quaiBalance: data.quaiBalance,
+                    tokenBalance: data.tokenBalance
+                };
+            } else {
+                // If no Discord data yet, use wallet address as ID
+                docRef = `user_${data.address}`;
+                docData.wallet = {
+                    address: data.address,
+                    quaiBalance: data.quaiBalance,
+                    tokenBalance: data.tokenBalance
+                };
             }
         }
+
+        await db.collection('users').doc(docRef).set(docData, { merge: true });
+        log('Data saved to database');
+    } catch (error) {
+        console.error('Firebase save error:', error);
+        log('Error saving data: ' + error.message);
+    }
+}
 
         async function getQuaiBalance(address) {
             try {
@@ -316,7 +345,6 @@
     
     if (accessToken) {
         try {
-            // Get Discord user info
             const response = await fetch('https://discord.com/api/users/@me', {
                 headers: {
                     Authorization: `Bearer ${accessToken}`
@@ -325,6 +353,9 @@
             
             const data = await response.json();
             console.log('Discord user data:', data);
+            
+            // Store Discord ID globally
+            window.currentDiscordId = data.id;
             
             // Show success message
             log(`Connected Discord: ${data.username}`);
