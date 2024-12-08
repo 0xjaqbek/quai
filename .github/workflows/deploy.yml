@@ -18,6 +18,11 @@ jobs:
         run: |
           echo "${{ secrets.FIREBASE_CONFIG }}" > firebase-credentials.json
 
+      - name: Replace credentials in HTML
+        run: |
+          sed -i "s/process.env.DISCORD_CLIENT_ID/'${{ secrets.DISCORD_CLIENT_ID }}'/g" index.html
+  
+
       - name: Configure Git
         run: |
           git config --global user.name "GitHub Actions Bot"

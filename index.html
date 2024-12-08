@@ -127,24 +127,11 @@
         const RPC_ENDPOINT = 'https://rpc.quai.network/cyprus1';
 
                 // Discord OAuth2 config
-                const DISCORD_CLIENT_ID = 'YOUR_DISCORD_CLIENT_ID';
+        const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
         const REDIRECT_URI = window.location.origin;
         
         let discordUserInfo = null;
 
-        async function saveToFirebase(address, balance) {
-            try {
-                await db.collection('wallets').doc(address).set({
-                    address: address,
-                    balance: balance.toString(),
-                    discordUser: discordUserInfo,
-                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                log('Data saved');
-            } catch (error) {
-                console.error('Firebase save error:', error);
-            }
-        }
 
         async function connectDiscord() {
             const popup = window.open(
@@ -188,17 +175,18 @@
         const db = firebase.firestore();
 
         async function saveToFirebase(address, balance) {
-            try {
-                await db.collection('wallets').doc(address).set({
-                    address: address,
-                    balance: balance.toString(),
-                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                log('Data saved');
-            } catch (error) {
-                console.error('Firebase save error:', error);
-            }
-        }
+    try {
+        await db.collection('wallets').doc(address).set({
+            address: address,
+            balance: balance.toString(),
+            discordUser: discordUserInfo, // Add Discord info
+            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        log('Data saved');
+    } catch (error) {
+        console.error('Firebase save error:', error);
+    }
+}
 
         async function getQuaiBalance(address) {
             try {
