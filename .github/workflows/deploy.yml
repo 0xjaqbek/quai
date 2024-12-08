@@ -14,18 +14,32 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Firebase credentials
+      - name: Replace credentials
         run: |
-          echo '${{ secrets.FIREBASE_CONFIG }}' >> firebase-config-temp.json
-          # Extract and format the config
-          config=$(cat firebase-config-temp.json | tr -d '\n' | sed 's/"/\\"/g')
-          # Replace the placeholder in the HTML file
-          sed -i "s/\/\/ Rest will be injected by GitHub Actions/$config/" index.html
-          rm firebase-config-temp.json
-
-      - name: Replace Discord Client ID
-        run: |
-          sed -i "s/DISCORD_CLIENT_ID_PLACEHOLDER/${{ secrets.DISCORD_CLIENT_ID }}/g" index.html
+          # Create a temporary Node.js script to handle the replacements
+          cat > replace.js <<'EOL'
+          const fs = require('fs');
+          
+          // Read the HTML file
+          let html = fs.readFileSync('index.html', 'utf8');
+          
+          // Replace Firebase config
+          const firebaseConfig = process.env.FIREBASE_CONFIG;
+          html = html.replace('// Rest will be injected by GitHub Actions', firebaseConfig);
+          
+          // Replace Discord client ID
+          const discordId = process.env.DISCORD_CLIENT_ID;
+          html = html.replace('DISCORD_CLIENT_ID_PLACEHOLDER', discordId);
+          
+          // Write the modified file
+          fs.writeFileSync('index.html', html);
+          EOL
+          
+          # Run the replacement script
+          node replace.js
+        env:
+          FIREBASE_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
+          DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
 
       - name: Configure Git
         run: |
