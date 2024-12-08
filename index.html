@@ -297,6 +297,34 @@
         document.getElementById('discordBtn').addEventListener('click', connectDiscord);
 
         document.getElementById('connectBtn').addEventListener('click', connectWallet);
+    
+        // Add these at the end of your script to debug
+document.addEventListener('DOMContentLoaded', function() {
+    const discordBtn = document.getElementById('discordBtn');
+    const connectBtn = document.getElementById('connectBtn');
+    
+    if (discordBtn) {
+        log('Discord button found');
+        discordBtn.onclick = () => {
+            log('Discord button clicked');
+            connectDiscord();
+        }
+    } else {
+        log('Discord button not found');
+    }
+    
+    if (connectBtn) {
+        log('Connect button found');
+        connectBtn.onclick = () => {
+            log('Connect button clicked');
+            connectWallet();
+        }
+    } else {
+        log('Connect button not found');
+    }
+});
+
     </script>
+
 </body>
 </html>
