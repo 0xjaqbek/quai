@@ -16,9 +16,33 @@ jobs:
 
       - name: Replace credentials
         run: |
-          # Use a different delimiter for sed to avoid issues with slashes
-          sed -i "s|DISCORD_CLIENT_ID_PLACEHOLDER|${{ secrets.DISCORD_CLIENT_ID }}|g" index.html
-          sed -i "s|// Rest will be injected by GitHub Actions|${{ secrets.FIREBASE_CONFIG }}|g" index.html
+          # Create a temporary Node.js script to handle the replacements
+          cat > replace.js <<'EOL'
+          const fs = require('fs');
+          let html = fs.readFileSync('index.html', 'utf8');
+          
+          // Create a safe version of Firebase config
+          const config = {
+            apiKey: process.env.FIREBASE_API_KEY,
+            projectId: "quaipepe-70873",
+            authDomain: "quaipepe-70873.firebaseapp.com",
+            storageBucket: "quaipepe-70873.appspot.com"
+          };
+          
+          // Replace Firebase config
+          html = html.replace('// Rest will be injected by GitHub Actions', JSON.stringify(config));
+          
+          // Replace Discord client ID
+          html = html.replace('DISCORD_CLIENT_ID_PLACEHOLDER', `"${process.env.DISCORD_CLIENT_ID}"`);
+          
+          fs.writeFileSync('index.html', html);
+          EOL
+          
+          # Run the replacement script
+          node replace.js
+        env:
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
 
       - name: Configure Git
         run: |
