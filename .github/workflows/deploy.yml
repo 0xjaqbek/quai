@@ -14,35 +14,18 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Replace credentials
+      - name: Replace Discord Client ID
         run: |
-          # Create a temporary Node.js script to handle the replacements
-          cat > replace.js <<'EOL'
-          const fs = require('fs');
-          let html = fs.readFileSync('index.html', 'utf8');
-          
-          // Create a safe version of Firebase config
-          const config = {
-            apiKey: process.env.FIREBASE_API_KEY,
-            projectId: "quaipepe-70873",
-            authDomain: "quaipepe-70873.firebaseapp.com",
-            storageBucket: "quaipepe-70873.appspot.com"
-          };
-          
-          // Replace Firebase config
-          html = html.replace('// Rest will be injected by GitHub Actions', JSON.stringify(config));
-          
-          // Replace Discord client ID
-          html = html.replace('DISCORD_CLIENT_ID_PLACEHOLDER', `"${process.env.DISCORD_CLIENT_ID}"`);
-          
-          fs.writeFileSync('index.html', html);
-          EOL
-          
-          # Run the replacement script
-          node replace.js
-        env:
-          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
-          DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
+          sed -i "s/DISCORD_CLIENT_ID_PLACEHOLDER/'${{ secrets.DISCORD_CLIENT_ID }}'/g" index.html
+
+      - name: Replace Firebase Config
+        run: |
+          echo '${{ secrets.FIREBASE_CONFIG }}' > config.txt
+          # Escape special characters and newlines
+          CONFIG=$(cat config.txt | tr -d '\n' | sed 's/\"/\\"/g')
+          # Replace the placeholder
+          sed -i "s|// Rest will be injected by GitHub Actions|$CONFIG|g" index.html
+          rm config.txt
 
       - name: Configure Git
         run: |
