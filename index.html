@@ -184,18 +184,19 @@
 
         async function saveToFirebase(data) {
     try {
-        const isDiscord = data.type === 'discord';
-        const id = isDiscord ? data.discordId : data.address;
-        const docRef = `user_${id}`;
+        const docRef = data.type === 'discord' 
+            ? `user_${data.discordId || data.address}` 
+            : `user_${window.currentDiscordId || data.address}`;
+
         const docData = {
             lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
-            [data.type]: isDiscord
+            [data.type]: data.type === 'discord' 
                 ? {
                     id: data.discordId,
                     username: data.username,
                     discriminator: data.discriminator,
                     avatar: data.avatar
-                }
+                } 
                 : {
                     address: data.address,
                     quaiBalance: data.quaiBalance,
@@ -207,7 +208,6 @@
         log('Data saved to database');
     } catch (error) {
         console.error('Firebase save error:', error);
-        log('Error saving data: ' + error.message);
     }
 }
 
