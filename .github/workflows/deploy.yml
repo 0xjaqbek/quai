@@ -14,33 +14,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Replace credentials
+      - name: Setup Firebase credentials
         run: |
-          # Create a temporary Node.js script to handle the replacements
-          cat > replace.js <<'EOL'
-          const fs = require('fs');
-          let html = fs.readFileSync('index.html', 'utf8');
-          
-          // Replace Discord client ID without quotes
-          html = html.replace(
-            /DISCORD_CLIENT_ID_PLACEHOLDER/g,
-            process.env.DISCORD_CLIENT_ID
-          );
-          
-          // Replace Firebase config
-          html = html.replace(
-            '// Rest will be injected by GitHub Actions',
-            process.env.FIREBASE_CONFIG
-          );
-          
-          fs.writeFileSync('index.html', html);
-          EOL
-          
-          # Run the replacement script
-          node replace.js
-        env:
-          DISCORD_CLIENT_ID: ${{ secrets.DISCORD_CLIENT_ID }}
-          FIREBASE_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
+          echo "${{ secrets.FIREBASE_CONFIG }}" > firebase-credentials.json
+
+      - name: Replace Discord Client ID
+        run: |
+          # Replace the Discord Client ID placeholder with the actual value
+          sed -i "s/DISCORD_CLIENT_ID_PLACEHOLDER/${{ secrets.DISCORD_CLIENT_ID }}/g" index.html
 
       - name: Configure Git
         run: |
@@ -53,3 +34,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: .
           force_orphan: true
+          
