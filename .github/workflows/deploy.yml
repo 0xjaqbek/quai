@@ -16,13 +16,14 @@ jobs:
 
       - name: Replace Discord Client ID
         run: |
-          # Replace without adding quotes
-          sed -i "s/DISCORD_CLIENT_ID_PLACEHOLDER/${{ secrets.DISCORD_CLIENT_ID }}/g" index.html
+          sed -i "s/DISCORD_CLIENT_ID_PLACEHOLDER/'${{ secrets.DISCORD_CLIENT_ID }}'/g" index.html
 
       - name: Replace Firebase Config
         run: |
           echo '${{ secrets.FIREBASE_CONFIG }}' > config.txt
+          # Escape special characters and newlines
           CONFIG=$(cat config.txt | tr -d '\n' | sed 's/\"/\\"/g')
+          # Replace the placeholder
           sed -i "s|// Rest will be injected by GitHub Actions|$CONFIG|g" index.html
           rm config.txt
 
