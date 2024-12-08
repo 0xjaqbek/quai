@@ -20,7 +20,6 @@ jobs:
 
       - name: Replace Discord Client ID
         run: |
-          # Replace the Discord Client ID placeholder with the actual value
           sed -i "s/DISCORD_CLIENT_ID_PLACEHOLDER/${{ secrets.DISCORD_CLIENT_ID }}/g" index.html
 
       - name: Configure Git
@@ -34,4 +33,3 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: .
           force_orphan: true
-          
