@@ -19,9 +19,9 @@ jobs:
           echo "${{ secrets.FIREBASE_CONFIG }}" > firebase-credentials.json
           chmod 644 firebase-credentials.json
 
-      - name: Replace credentials in HTML
-        run: |
-          sed -i "s|process.env.DISCORD_CLIENT_ID|'${{ secrets.DISCORD_CLIENT_ID }}'|g" index.html
+          - name: Replace credentials in HTML
+          run: |
+            sed -i "s/DISCORD_CLIENT_ID_PLACEHOLDER/'${{ secrets.DISCORD_CLIENT_ID }}'/g" index.html
 
       - name: Configure Git
         run: |

@@ -206,7 +206,7 @@
         let DISCORD_USER_DATA = null;
 
         // Discord OAuth2 configuration
-        const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
+        const DISCORD_CLIENT_ID = DISCORD_CLIENT_ID_PLACEHOLDER;
         const REDIRECT_URI = encodeURIComponent(window.location.origin + window.location.pathname);
         const DISCORD_OAUTH_URL = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=token&scope=identify`;
 
@@ -390,6 +390,8 @@
         // Event Listeners
         document.getElementById('connectBtn').addEventListener('click', connectWallet);
         document.getElementById('discordBtn').addEventListener('click', () => {
+            console.log('Discord URL:', DISCORD_OAUTH_URL); // Debug line
+            log('Redirecting to Discord...'); // Debug line
             window.location.href = DISCORD_OAUTH_URL;
         });
 
