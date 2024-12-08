@@ -17,11 +17,11 @@ jobs:
       - name: Setup Firebase credentials
         run: |
           echo "${{ secrets.FIREBASE_CONFIG }}" > firebase-credentials.json
+          chmod 644 firebase-credentials.json
 
       - name: Replace credentials in HTML
         run: |
-          sed -i "s/process.env.DISCORD_CLIENT_ID/'${{ secrets.DISCORD_CLIENT_ID }}'/g" index.html
-  
+          sed -i "s|process.env.DISCORD_CLIENT_ID|'${{ secrets.DISCORD_CLIENT_ID }}'|g" index.html
 
       - name: Configure Git
         run: |
@@ -34,3 +34,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: .
           force_orphan: true
+          exclude_assets: ''
