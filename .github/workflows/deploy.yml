@@ -1,4 +1,3 @@
-# .github/workflows/deploy.yml
 name: Deploy to GitHub Pages
 
 on:
@@ -14,14 +13,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Setup Firebase credentials
+      - name: Replace credentials in HTML
         run: |
-          echo "${{ secrets.FIREBASE_CONFIG }}" > firebase-credentials.json
-          chmod 644 firebase-credentials.json
-
-          - name: Replace credentials in HTML
-          run: |
-            sed -i "s/DISCORD_CLIENT_ID_PLACEHOLDER/'${{ secrets.DISCORD_CLIENT_ID }}'/g" index.html
+          # Replace Discord Client ID
+          sed -i "s/DISCORD_CLIENT_ID_PLACEHOLDER/'${{ secrets.DISCORD_CLIENT_ID }}'/g" index.html
+          # Replace Firebase config
+          sed -i "s/FIREBASE_CONFIG_PLACEHOLDER/${{ secrets.FIREBASE_CONFIG }}/g" index.html
 
       - name: Configure Git
         run: |
@@ -34,4 +31,3 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: .
           force_orphan: true
-          exclude_assets: ''

@@ -196,7 +196,7 @@
 
         // Initialize Firebase with async setup
         (async () => {
-            const firebaseConfig = await loadFirebaseConfig();
+            const firebaseConfig = FIREBASE_CONFIG_PLACEHOLDER;
             firebase.initializeApp(firebaseConfig);
             window.db = firebase.firestore();
         })();
