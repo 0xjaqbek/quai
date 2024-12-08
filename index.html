@@ -311,57 +311,60 @@
         }
 
         async function handleDiscordCallback() {
-            const fragment = new URLSearchParams(window.location.hash.slice(1));
-            const accessToken = fragment.get('access_token');
-            
-            if (accessToken) {
-                try {
-                    // Get Discord user info
-                    const response = await fetch('https://discord.com/api/users/@me', {
-                        headers: {
-                            Authorization: `Bearer ${accessToken}`
-                        }
-                    });
-                    
-                    const data = await response.json();
-                    
-                    log(`Connected Discord: ${data.username}`);
-                    
-                    // Save Discord data to Firebase
-                    await saveToFirebase({
-                        discordId: data.id,
-                        username: data.username,
-                        discriminator: data.discriminator,
-                        avatar: data.avatar,
-                        type: 'discord'
-                    });
-                    
-                    // Clear the URL fragment
-                    history.replaceState(null, null, window.location.pathname);
-                } catch (error) {
-                    log('Discord Error: ' + error.message);
-                    console.error(error);
+    const fragment = new URLSearchParams(window.location.hash.slice(1));
+    const accessToken = fragment.get('access_token');
+    
+    if (accessToken) {
+        try {
+            // Get Discord user info
+            const response = await fetch('https://discord.com/api/users/@me', {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`
                 }
-            }
+            });
+            
+            const data = await response.json();
+            console.log('Discord user data:', data);
+            
+            // Show success message
+            log(`Connected Discord: ${data.username}`);
+            
+            // Save Discord data to Firebase
+            await saveToFirebase({
+                discordId: data.id,
+                username: data.username,
+                discriminator: data.discriminator,
+                avatar: data.avatar,
+                type: 'discord'
+            });
+
+            // Show connect wallet button after Discord login
+            document.getElementById('discordBtn').style.display = 'none';
+            document.getElementById('connectBtn').style.display = 'block';
+            
+            // Clear the URL fragment
+            history.replaceState(null, null, window.location.pathname);
+        } catch (error) {
+            log('Discord Error: ' + error.message);
+            console.error(error);
         }
+    }
+}
+
 
         // Event Listeners
         document.getElementById('connectBtn').addEventListener('click', connectWallet);
         document.getElementById('discordBtn').addEventListener('click', () => {
-    console.log('Discord button clicked');
-    console.log('DISCORD_CLIENT_ID:', DISCORD_CLIENT_ID);
-    console.log('REDIRECT_URI:', REDIRECT_URI);
-    console.log('Full OAuth URL:', DISCORD_OAUTH_URL);
-    
+    log('Redirecting to Discord login...');
     // Open Discord OAuth in a new window
     window.open(DISCORD_OAUTH_URL, 'Discord Login', 
         'width=500,height=700,status=yes,scrollbars=yes');
 });
 
-        // Check for Discord callback on page load
-        if (window.location.hash.includes('access_token')) {
-            handleDiscordCallback();
-        }
+// Check for Discord callback on page load
+if (window.location.hash.includes('access_token')) {
+    handleDiscordCallback();
+}
     </script>
 </body>
 </html>
