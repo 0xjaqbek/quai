@@ -182,32 +182,18 @@
         const REDIRECT_URI = encodeURIComponent(window.location.origin + window.location.pathname);
         const DISCORD_OAUTH_URL = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=token&scope=identify`;
 
-        async function saveToFirebase(data) {
+async function saveToFirebase(data) {
     try {
-        const docRef = data.type === 'discord' 
-            ? `user_${data.discordId || data.address}` 
-            : `user_${window.currentDiscordId || data.address}`;
-
-        const docData = {
+        const docRef = db.collection('users').doc(data.address || `user_${data.discordId}`);
+        const payload = {
             lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
-            [data.type]: data.type === 'discord' 
-                ? {
-                    id: data.discordId,
-                    username: data.username,
-                    discriminator: data.discriminator,
-                    avatar: data.avatar
-                } 
-                : {
-                    address: data.address,
-                    quaiBalance: data.quaiBalance,
-                    tokenBalance: data.tokenBalance
-                }
+            ...data
         };
-
-        await db.collection('users').doc(docRef).set(docData, { merge: true });
+        await docRef.set(payload, { merge: true });
         log('Data saved to database');
     } catch (error) {
-        console.error('Firebase save error:', error);
+        log(`Error saving to database: ${error.message}`);
+        console.error(error);
     }
 }
 
