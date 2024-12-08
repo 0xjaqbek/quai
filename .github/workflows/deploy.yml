@@ -15,10 +15,23 @@ jobs:
 
       - name: Replace credentials in HTML
         run: |
+          # Create a temporary file with the Firebase config
+          echo '${{ secrets.FIREBASE_CONFIG }}' > firebase-config.json
+          
           # Replace Discord Client ID
           sed -i "s/DISCORD_CLIENT_ID_PLACEHOLDER/'${{ secrets.DISCORD_CLIENT_ID }}'/g" index.html
-          # Replace Firebase config
-          sed -i "s/FIREBASE_CONFIG_PLACEHOLDER/${{ secrets.FIREBASE_CONFIG }}/g" index.html
+          
+          # Replace Firebase config using node
+          node -e "
+            const fs = require('fs');
+            const html = fs.readFileSync('index.html', 'utf8');
+            const config = fs.readFileSync('firebase-config.json', 'utf8');
+            const newHtml = html.replace('FIREBASE_CONFIG_PLACEHOLDER', config);
+            fs.writeFileSync('index.html', newHtml);
+          "
+          
+          # Clean up
+          rm firebase-config.json
 
       - name: Configure Git
         run: |
