@@ -182,21 +182,26 @@
         const REDIRECT_URI = encodeURIComponent(window.location.origin + window.location.pathname);
         const DISCORD_OAUTH_URL = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=token&scope=identify`;
 
+// Global object to hold data temporarily
+window.userData = {};
+
+// Firebase save function with merged data
 async function saveToFirebase(data) {
     try {
-        const docRef = db.collection('users').doc(data.address || `user_${data.discordId}`);
+        const userId = data.discordId || data.address;
+        const docRef = db.collection('users').doc(userId);
         const payload = {
             lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
-            ...data
+            ...window.userData,
+            ...data, // Merge new data into the global data object
         };
         await docRef.set(payload, { merge: true });
-        log('Data saved to database');
+        log('Data saved to database successfully');
     } catch (error) {
         log(`Error saving to database: ${error.message}`);
         console.error(error);
     }
 }
-
 
         async function getQuaiBalance(address) {
             try {
@@ -258,56 +263,48 @@ async function saveToFirebase(data) {
         }
 
         async function connectWallet() {
-            try {
-                if (!window.pelagus) {
-                    throw new Error('Pelagus wallet not found');
-                }
-
-                const accounts = await window.pelagus.request({
-                    method: 'eth_requestAccounts'
-                });
-
-                const address = accounts[0];
-                log('Connected: ' + address);
-
-                document.getElementById('titleText').style.display = 'block';
-                document.getElementById('scanBtn').style.display = 'block';
-                document.getElementById('buyBtn').style.display = 'block';
-                
-                const scanBtn = document.getElementById('scanBtn');
-                scanBtn.onclick = () => window.open(`https://quaiscan.io/address/${address}`, '_blank');
-
-                // Get QUAI balance
-                const balance = await getQuaiBalance(address);
-                if (balance) {
-                    const quaiBalance = parseInt(balance, 16) / 1e18;
-                    log(`QUAI Balance: ${quaiBalance.toFixed(4)} QUAI`);
-                }
-
-                // Get token balance
-                const tokenBalance = await getTokenBalance(address);
-                const tokenBalanceFormatted = Number(tokenBalance) / 1e18;
-                
-                // Save to Firebase with wallet data
-                await saveToFirebase({
-                    address: address,
-                    quaiBalance: balance,
-                    tokenBalance: tokenBalance.toString(),
-                    type: 'wallet'
-                });
-                
-                if (tokenBalanceFormatted === 0) {
-                    log('No OG Quai PEPE tokens found 😢');
-                    log('Time to buy some! 🚀');
-                } else {
-                    log(`OG Quai PEPE Balance: ${tokenBalanceFormatted.toFixed(2)} QPEPE`);
-                }
-
-            } catch (error) {
-                log('Error: ' + error.message);
-                console.error(error);
-            }
+    try {
+        if (!window.pelagus) {
+            throw new Error('Pelagus wallet not found');
         }
+
+        const accounts = await window.pelagus.request({ method: 'eth_requestAccounts' });
+        const address = accounts[0];
+        log('Connected Wallet: ' + address);
+
+        document.getElementById('titleText').style.display = 'block';
+        document.getElementById('scanBtn').style.display = 'block';
+        document.getElementById('buyBtn').style.display = 'block';
+        
+        const scanBtn = document.getElementById('scanBtn');
+        scanBtn.onclick = () => window.open(`https://quaiscan.io/address/${address}`, '_blank');
+
+        const balance = await getQuaiBalance(address);
+        const tokenBalance = await getTokenBalance(address);
+        const tokenBalanceFormatted = Number(tokenBalance) / 1e18;
+
+        // Store wallet data temporarily
+        window.userData.wallet = {
+            address,
+            quaiBalance: balance,
+            tokenBalance: tokenBalance.toString(),
+        };
+
+        if (tokenBalanceFormatted === 0) {
+            log('No OG Quai PEPE tokens found 😢');
+        } else {
+            log(`OG Quai PEPE Balance: ${tokenBalanceFormatted.toFixed(2)} QPEPE`);
+        }
+
+        // Save only if Discord data is also available
+        if (window.userData.discord) {
+            await saveToFirebase(window.userData);
+        }
+    } catch (error) {
+        log('Wallet Error: ' + error.message);
+        console.error(error);
+    }
+}
 
         async function handleDiscordCallback() {
     const fragment = new URLSearchParams(window.location.hash.slice(1));
@@ -316,35 +313,30 @@ async function saveToFirebase(data) {
     if (accessToken) {
         try {
             const response = await fetch('https://discord.com/api/users/@me', {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`
-                }
+                headers: { Authorization: `Bearer ${accessToken}` },
             });
             
             const data = await response.json();
             console.log('Discord user data:', data);
-            
-            // Store Discord ID globally
-            window.currentDiscordId = data.id;
-            
-            // Show success message
-            log(`Connected Discord: ${data.username}`);
-            
-            // Save Discord data to Firebase
-            await saveToFirebase({
+
+            // Store Discord data temporarily
+            window.userData.discord = {
                 discordId: data.id,
                 username: data.username,
                 discriminator: data.discriminator,
                 avatar: data.avatar,
-                type: 'discord'
-            });
+            };
 
-            // Show connect wallet button after Discord login
+            log(`Connected Discord: ${data.username}`);
             document.getElementById('discordBtn').style.display = 'none';
             document.getElementById('connectBtn').style.display = 'block';
             
-            // Clear the URL fragment
-            history.replaceState(null, null, window.location.pathname);
+            // Save only if wallet data is also available
+            if (window.userData.wallet) {
+                await saveToFirebase(window.userData);
+            }
+            
+            history.replaceState(null, null, window.location.pathname); // Clear the URL fragment
         } catch (error) {
             log('Discord Error: ' + error.message);
             console.error(error);
@@ -353,13 +345,11 @@ async function saveToFirebase(data) {
 }
 
 
-        // Event Listeners
-        document.getElementById('connectBtn').addEventListener('click', connectWallet);
-        document.getElementById('discordBtn').addEventListener('click', () => {
+// Event Listeners
+document.getElementById('connectBtn').addEventListener('click', connectWallet);
+document.getElementById('discordBtn').addEventListener('click', () => {
     log('Redirecting to Discord login...');
-    // Open Discord OAuth in a new window
-    window.open(DISCORD_OAUTH_URL, 'Discord Login', 
-        'width=500,height=700,status=yes,scrollbars=yes');
+    window.open(DISCORD_OAUTH_URL, 'Discord Login', 'width=500,height=700,status=yes,scrollbars=yes');
 });
 
 // Check for Discord callback on page load
