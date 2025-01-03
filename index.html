@@ -12,7 +12,9 @@
     <link rel="icon" type="image/png" sizes="512x512" href="android-chrome-512x512.png">
     
     <!-- Include Quai SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/quais@latest/dist/quais.umd.min.js"></script>
+    <script type="module">
+        import { quais } from "https://cdn.jsdelivr.net/npm/quais@latest/dist/quais.esm.min.js";
+      </script>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
