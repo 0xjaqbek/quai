@@ -77,33 +77,37 @@
         }
 
         .btn-connect {
-            background: #4F46E5;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            width: 100%;
-            cursor: pointer;
-            font-size: 16px;
-            margin-bottom: 1rem;
-            display: none;
-        }
+    background: #4F46E5;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    width: 100%;
+    cursor: pointer;
+    font-size: 16px;
+    margin-bottom: 1rem;
+    display: none;
+    animation: glowEffectWallet 2s infinite;
+    transition: all 0.3s ease;
+}
 
         .btn-discord {
-            background: #5865F2;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            width: 100%;
-            cursor: pointer;
-            font-size: 16px;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
+    background: #5865F2;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    width: 100%;
+    cursor: pointer;
+    font-size: 16px;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    animation: glowEffect 2s infinite;
+    transition: all 0.3s ease;
+}
 
         .btn-scan {
             background: #10B981;
@@ -163,6 +167,42 @@
             margin-top: 1rem;
             display: none;
         }
+
+        /* Add this to the existing style section */
+
+@keyframes glowEffect {
+    0% {
+        box-shadow: 0 0 5px #5865F2, 0 0 10px #5865F2, 0 0 15px #5865F2;
+    }
+    50% {
+        box-shadow: 0 0 10px #5865F2, 0 0 20px #5865F2, 0 0 30px #5865F2;
+    }
+    100% {
+        box-shadow: 0 0 5px #5865F2, 0 0 10px #5865F2, 0 0 15px #5865F2;
+    }
+}
+
+@keyframes glowEffectWallet {
+    0% {
+        box-shadow: 0 0 5px #4F46E5, 0 0 10px #4F46E5, 0 0 15px #4F46E5;
+    }
+    50% {
+        box-shadow: 0 0 10px #4F46E5, 0 0 20px #4F46E5, 0 0 30px #4F46E5;
+    }
+    100% {
+        box-shadow: 0 0 5px #4F46E5, 0 0 10px #4F46E5, 0 0 15px #4F46E5;
+    }
+}
+
+.btn-discord:hover {
+    transform: translateY(-2px);
+    animation: glowEffect 1s infinite;
+}
+
+.btn-connect:hover {
+    transform: translateY(-2px);
+    animation: glowEffectWallet 1s infinite;
+}
     </style>
 </head>
 <body>
