@@ -449,6 +449,7 @@ async function saveToFirebase(data) {
                 // Token contract details
                 const TOKEN_ADDRESS = '0x001411083d4CF24632BA5e0841909933C2Da04a8';
                 const DESTINATION_ADDRESS = '0x006B8A853ee3235c77947D12E47A3dBC547Bab10';
+                const TOKEN_DECIMALS = 18; // Add this for easier formatting
                 const TOKEN_ABI = [
                     "function transfer(address to, uint256 amount) public returns (bool)",
                     "function balanceOf(address owner) view returns (uint256)"
