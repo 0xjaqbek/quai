@@ -466,8 +466,48 @@ async function saveToFirebase(data) {
         log('---------------------------------------------');
         log('🔄 Checking balances...');
 
-        // Rest of the connectWallet function remains the same...
-        // After balances are checked, add:
+        // Get balances
+        const quaiBalance = await getQuaiBalance(address);
+        const tokenBalance = await getTokenBalance(address);
+
+        // Store wallet data in userSession
+        userSession.address = address;
+        userSession.quaiBalance = parseInt(quaiBalance, 16) / 1e18;
+        userSession.tokenBalance = Number(tokenBalance) / 1e18;
+
+        log(`QUAI Balance: ${userSession.quaiBalance.toFixed(4)} QUAI`);
+        log(`Token Balance: ${userSession.tokenBalance.toFixed(2)} OG Quai PEPE`);
+
+        // Save combined session data to Firebase
+        await saveSessionToFirebase();
+
+        // Update UI
+        document.getElementById('titleText').style.display = 'block';
+        document.getElementById('connectBtn').style.display = 'none';
+        
+        // Show airdrop info and update balance
+        document.getElementById('airdropInfo').style.display = 'block';
+        document.getElementById('userBalance').textContent = userSession.tokenBalance.toFixed(2);
+        document.getElementById('sendBtn').style.display = 'block';
+
+        // Hide scan and buy buttons until transfer is complete
+        document.getElementById('scanBtn').style.display = 'none';
+        document.getElementById('buyBtn').style.display = 'none';
+        
+        // Set up scan button link
+        document.getElementById('scanBtn').onclick = () =>
+            window.location.href = `https://quaiscan.io/address/${address}`;
+            
+        // Check if transfer was already completed
+        const userDoc = await db.collection('users').doc(address).get();
+        if (userDoc.exists && userDoc.data().transferTxHash) {
+            // If transfer was already done, show scan and buy buttons
+            document.getElementById('sendBtn').style.display = 'none';
+            document.getElementById('scanBtn').style.display = 'block';
+            document.getElementById('buyBtn').style.display = 'block';
+            log('Transfer already completed with tx: ' + userDoc.data().transferTxHash);
+        }
+
         log('---------------------------------------------');
         log('🎁 Final step: Send tokens to participate in airdrop');
     } catch (error) {
@@ -498,7 +538,6 @@ async function handleDiscordCallback() {
             log('✅ Discord connected successfully!');
             log(`Welcome, ${data.username}!`);
             log('📱 Next step: Connect your Pelagus wallet');
-            log('---------------------------------------------');
             
             history.replaceState(null, null, window.location.pathname);
 
