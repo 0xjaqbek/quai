@@ -446,29 +446,13 @@ async function saveToFirebase(data) {
         const signerAddress = accounts[0];
         console.log(`✅ Wallet connected: ${signerAddress}`);
 
-        // Fetch Token Balance
-        const balanceData = '0x70a08231000000000000000000000000' + signerAddress.slice(2).padStart(64, '0');
-        const balanceResponse = await fetch(RPC_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                jsonrpc: '2.0',
-                method: 'quai_call',
-                params: [{ to: TOKEN_ADDRESS, data: balanceData }, 'latest'],
-                id: 1,
-            }),
-        });
-        const balanceResult = await balanceResponse.json();
-        console.log('Balance Response:', balanceResult);
+        // Use the previously fetched token balance
+        const rawBalance = BigInt(userSession.tokenBalance * 1e18); // Ensure proper formatting
+        console.log(`✅ Using Cached Token Balance: ${rawBalance.toString()}`);
 
-        const rawBalance = BigInt(balanceResult.result || 0);
         if (rawBalance === 0n) {
             throw new Error('Token balance is zero. Please verify your token balance.');
         }
-
-        const decimals = 18; // Adjust if different
-        const adjustedBalance = rawBalance / BigInt(10 ** decimals);
-        console.log(`✅ Adjusted Token Balance: ${adjustedBalance.toString()}`);
 
         // Prepare Transaction Data
         const transferData = 
