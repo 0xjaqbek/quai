@@ -392,6 +392,7 @@ async function saveToFirebase(data) {
         }
 
         async function sendTokens() {
+            console.log(window.quais);
     try {
         if (!window.pelagus) {
             log('❌ Pelagus wallet not found');
@@ -399,7 +400,7 @@ async function saveToFirebase(data) {
         }
 
         log('🔄 Connecting to Pelagus...');
-        const provider = new quais.BrowserProvider(window.pelagus);
+        const provider = new window.quais.BrowserProvider(window.pelagus);
         const signer = await provider.getSigner();
 
         // Check token balance
