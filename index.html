@@ -395,7 +395,16 @@ async function saveToFirebase(data) {
             throw new Error('Pelagus wallet not found');
         }
 
-        // Get current token balance
+        // Check QUAI balance first
+        const quaiBalance = await getQuaiBalance(userSession.address);
+        const quaiAmount = parseInt(quaiBalance, 16) / 1e18;
+        if (quaiAmount <= 0.01) { // Check if user has at least 0.01 QUAI for gas
+            log('❌ Insufficient QUAI for gas fees');
+            log('Please add some QUAI to your wallet for transaction fees');
+            throw new Error('Insufficient QUAI balance for gas');
+        }
+
+        // Rest of your token sending code remains the same...
         const currentBalance = await getTokenBalance(userSession.address);
         if (currentBalance <= 0n) {
             log('❌ No tokens available to send');
