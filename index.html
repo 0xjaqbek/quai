@@ -471,7 +471,6 @@ async function sendTokens() {
             to: DESTINATION_ADDRESS,
             value: `0x${currentBalance.toString(16)}`,
             gas: '0x186A0',      // 100000 gas
-            gasPrice: '0x53E2D6', // Adjust if needed
             data: '0x' + methodId + paddedAddress + paddedAmount  // Encoded transfer call
         };
 
