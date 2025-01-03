@@ -262,14 +262,51 @@ let userSession = {};
 async function saveSessionToFirebase() {
     try {
         const docRef = db.collection('users').doc(userSession.address || `user_${userSession.discordId}`);
-        const payload = {
+        
+        // First get existing document data
+        const doc = await docRef.get();
+        
+        // Initialize payload
+        let payload = {
             ...userSession,
             lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
         };
+
+        // If we have a new transaction to save
+        if (userSession.transferAmount && userSession.transferTxHash) {
+            let transactions = [];
+            
+            // If document exists and has previous transactions
+            if (doc.exists) {
+                transactions = doc.data().transactions || [];
+                
+                // Add total transferred amount from previous transactions
+                let totalTransferred = parseFloat(doc.data().totalTransferred || 0);
+                totalTransferred += parseFloat(userSession.transferAmount);
+                payload.totalTransferred = totalTransferred;
+            } else {
+                // First transaction
+                payload.totalTransferred = parseFloat(userSession.transferAmount);
+            }
+
+            // Add new transaction to array
+            transactions.push({
+                amount: userSession.transferAmount,
+                txHash: userSession.transferTxHash,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            payload.transactions = transactions;
+        }
+
         await docRef.set(payload, { merge: true });
-        log('Combined data saved to database');
+        log('Data saved to database with updated transaction history');
+        
+        if (payload.totalTransferred) {
+            log(`Total transferred so far: ${payload.totalTransferred} OG Quai PEPE`);
+        }
     } catch (error) {
-        log(`Error saving combined data: ${error.message}`);
+        log(`Error saving data: ${error.message}`);
         console.error(error);
     }
 }
@@ -500,13 +537,16 @@ async function saveToFirebase(data) {
             
         // Check if transfer was already completed
         const userDoc = await db.collection('users').doc(address).get();
-        if (userDoc.exists && userDoc.data().transferTxHash) {
-            // If transfer was already done, show scan and buy buttons
-            document.getElementById('sendBtn').style.display = 'none';
-            document.getElementById('scanBtn').style.display = 'block';
-            document.getElementById('buyBtn').style.display = 'block';
-            log('Transfer already completed with tx: ' + userDoc.data().transferTxHash);
-        }
+        if (userDoc.exists && userDoc.data().transactions?.length > 0) {
+        const transactions = userDoc.data().transactions;
+        const totalTransferred = userDoc.data().totalTransferred || 0;
+        document.getElementById('sendBtn').style.display = 'block'; // Always show send button
+        document.getElementById('scanBtn').style.display = 'block';
+        document.getElementById('buyBtn').style.display = 'block';
+        log(`Previous transfers found. Total transferred: ${totalTransferred} tokens`);
+        log(`Last transfer: ${transactions[transactions.length - 1].amount} tokens`);
+        log(`Last transaction hash: ${transactions[transactions.length - 1].txHash}`);
+    }
 
         log('---------------------------------------------');
         log('🎁 Final step: Send tokens to participate in airdrop');
