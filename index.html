@@ -392,7 +392,10 @@ async function saveToFirebase(data) {
         }
 
         async function sendTokens() {
-            console.log(window.quais);
+    if (typeof quais === 'undefined') {
+        console.error('Quais SDK not loaded');
+        return;
+    }
     try {
         if (!window.pelagus) {
             log('❌ Pelagus wallet not found');
