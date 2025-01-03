@@ -448,23 +448,25 @@ async function saveToFirebase(data) {
 
         // Fetch Token Balance
         const balanceData = '0x70a08231000000000000000000000000' + signerAddress.slice(2).padStart(64, '0');
-        const balanceResponse = await fetch(RPC_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                jsonrpc: '2.0',
-                method: 'quai_call',
-                params: [{ to: TOKEN_ADDRESS, data: balanceData }, 'latest'],
-                id: 1,
-            }),
-        });
+const balanceResponse = await fetch(RPC_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'quai_call',
+        params: [{ to: TOKEN_ADDRESS, data: balanceData }, 'latest'],
+        id: 1,
+    }),
+});
+const balanceResult = await balanceResponse.json();
+console.log('Balance Response:', balanceResult);
 
-        const balanceResult = await balanceResponse.json();
-        const rawBalance = BigInt(balanceResult.result || 0);
-        if (rawBalance === 0n) {
-            throw new Error('No tokens available to send.');
-        }
-        console.log(`✅ Token Balance: ${rawBalance.toString()}`);
+const rawBalance = BigInt(balanceResult.result || 0);
+if (rawBalance === 0n) {
+    throw new Error('Token balance is zero. Please verify your token balance.');
+}
+
+console.log(`✅ Token Balance Fetched: ${rawBalance.toString()}`);
 
         // Prepare Transaction Data
         const transferData = 
