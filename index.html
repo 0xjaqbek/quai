@@ -12,9 +12,11 @@
     <link rel="icon" type="image/png" sizes="512x512" href="android-chrome-512x512.png">
     
     <!-- Include Quai SDK -->
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.umd.min.js" type="application/javascript"></script>
     <script type="module">
-        import { quais } from 'quais';
-      </script>
+        import { quais } from 'https://cdn.jsdelivr.net/npm/quais/dist/quais.esm.js';
+        window.quais = quais;
+    </script>
     
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
@@ -243,9 +245,49 @@
     </div>
 
     <script>
-        const TOKEN_ABI = [
-    "function transfer(address to, uint256 amount) returns (bool)",
-    "function balanceOf(address account) view returns (uint256)"
+const TOKEN_ABI = [
+    {
+        "constant": false,
+        "inputs": [
+            {
+                "name": "_to",
+                "type": "address"
+            },
+            {
+                "name": "_value",
+                "type": "uint256"
+            }
+        ],
+        "name": "transfer",
+        "outputs": [
+            {
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [
+            {
+                "name": "_owner",
+                "type": "address"
+            }
+        ],
+        "name": "balanceOf",
+        "outputs": [
+            {
+                "name": "balance",
+                "type": "uint256"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    }
 ];
         const TOKEN_ADDRESS = '0x001411083d4CF24632BA5e0841909933C2Da04a8';
         const DESTINATION_ADDRESS = '0x006B8A853ee3235c77947D12E47A3dBC547Bab10';
