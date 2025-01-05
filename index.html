@@ -364,15 +364,39 @@ async function saveToFirebase(data) {
     try {
         const userId = data.discordId || data.address;
         const docRef = db.collection('users').doc(userId);
-        const payload = {
+        const doc = await docRef.get();
+        
+        let payload = {
             lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
-            ...window.userData,
-            ...data, // Merge new data into the global data object
+            transactions: [],
+            transferCount: 1, // Default for the first transfer
+            totalTransferred: parseFloat(data.transferAmount || 0),
+            status: data.status || 'pending'
         };
+
+        if (doc.exists) {
+            const existingData = doc.data();
+            payload.totalTransferred = parseFloat(existingData.totalTransferred || 0) + parseFloat(data.transferAmount || 0);
+            payload.transferCount = (existingData.transferCount || 0) + 1;
+            payload.transactions = existingData.transactions || [];
+        }
+
+        if (data.transferTxHash) {
+            payload.transactions.push({
+                amount: data.transferAmount,
+                txHash: data.transferTxHash,
+                status: data.status || 'success',
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
+
         await docRef.set(payload, { merge: true });
-        log('Data saved to database successfully');
+        log('✅ Data saved to the database successfully with cumulative totals and transfer count.');
+
+        log(`📊 Total Transferred: ${payload.totalTransferred} tokens`);
+        log(`🔄 Number of Transfers: ${payload.transferCount}`);
     } catch (error) {
-        log(`Error saving to database: ${error.message}`);
+        log(`❌ Error saving to database: ${error.message}`);
         console.error(error);
     }
 }
@@ -569,11 +593,11 @@ async function sendTokens() {
 
         // Update Firebase with transaction success
         await saveToFirebase({
-            address: signerAddress,
-            transferAmount: userSession.tokenBalance,
-            transferTxHash: receipt.transactionHash,
-            status: 'success'
-        });
+    address: signerAddress,
+    transferAmount: userSession.tokenBalance,
+    transferTxHash: receipt.transactionHash,
+    status: 'success'
+});
 
         log('✅ Transaction details saved to the database.');
 
@@ -583,8 +607,8 @@ async function sendTokens() {
 
         // Show Discord and Twitter buttons
         document.getElementById('discordBtn').style.display = 'block';
-        document.getElementById('discordBtn').innerHTML = 'Follow us on Discord';
-        document.getElementById('discordBtn').onclick = () => window.open('https://discord.com/invite/TsuBSZNb5q', '_blank');
+        document.getElementById('discordBtn').innerHTML = 'Remember to follow our X [click]';
+        document.getElementById('discordBtn').onclick = () => window.open('https://x.com/quaipepe', '_blank');
 
         const twitterBtn = document.createElement('button');
         twitterBtn.className = 'btn-connect';
@@ -603,12 +627,12 @@ async function sendTokens() {
 
         // Log failure to Firebase
         await saveToFirebase({
-            address: signerAddress,
-            transferAmount: userSession.tokenBalance || 0,
-            transferTxHash: null,
-            status: 'failed',
-            error: error.message
-        });
+    address: signerAddress,
+    transferAmount: userSession.tokenBalance || 0,
+    transferTxHash: null,
+    status: 'failed',
+    error: error.message
+});
 
         log('❌ Transaction failure details saved to the database.');
         throw error;
