@@ -585,21 +585,11 @@ async function sendTokens() {
         });
 
         log('✅ Token transfer initiated. Waiting for confirmation...');
-        log(`📄 Transaction Hash: ${txResponse}`); // Show txHash in console
-
-        // Show Transaction Hash in the UI
-        const airdropInfo = document.getElementById('airdropInfo');
-        airdropInfo.innerHTML += `
-            <p><strong>Transaction Hash:</strong> 
-            <a href="https://quaiscan.io/tx/${txResponse}" target="_blank">${txResponse}</a></p>
-        `;
-        airdropInfo.style.display = 'block';
-
         const receipt = await waitForTransaction(txResponse, RPC_ENDPOINT);
         console.log('✅ Transaction Confirmed:', receipt.transactionHash);
 
         alert(`🎉 Tokens sent successfully! Transaction Hash: ${receipt.transactionHash}`);
-        log('✅ Tokens sent successfully. Transaction complete.');
+        log('✅ Tokens sent successfully. Transaction complete.  Transaction Hash: ${receipt.transactionHash}');
 
         // Update Firebase with transaction success
         await saveToFirebase({
