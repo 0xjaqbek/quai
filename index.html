@@ -567,6 +567,21 @@ async function sendTokens() {
         alert(`🎉 Tokens sent successfully! Transaction Hash: ${receipt.transactionHash}`);
         log('✅ Tokens sent successfully. Transaction complete.');
 
+        // Hide airdrop info and send button
+        document.getElementById('airdropInfo').style.display = 'none';
+        document.getElementById('sendBtn').style.display = 'none';
+
+        // Show Discord and Twitter logos
+        document.getElementById('discordBtn').style.display = 'block';
+        document.getElementById('discordBtn').innerHTML = 'Follow us on Discord';
+        document.getElementById('discordBtn').onclick = () => window.open('https://discord.com/invite/yourserver', '_blank');
+
+        const twitterBtn = document.createElement('button');
+        twitterBtn.className = 'btn-connect';
+        twitterBtn.innerHTML = 'Follow us on X (Twitter)';
+        twitterBtn.onclick = () => window.open('https://twitter.com/yourprofile', '_blank');
+        document.querySelector('.container').appendChild(twitterBtn);
+
     } catch (error) {
         if (error.message.includes('user rejected')) {
             log('❌ Token transfer rejected by the user. Please approve to proceed.');
@@ -575,7 +590,7 @@ async function sendTokens() {
             console.error('❌ Error sending tokens:', error.message || error);
             alert(`❌ Transfer Error: ${error.message}`);
         }
-        throw error; // Stop further processing
+        throw error;
     }
 }
 
