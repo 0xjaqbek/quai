@@ -589,7 +589,7 @@ async function sendTokens() {
         console.log('✅ Transaction Confirmed:', receipt.transactionHash);
 
         alert(`🎉 Tokens sent successfully! Transaction Hash: ${receipt.transactionHash}`);
-        log('✅ Tokens sent successfully. Transaction complete.  Transaction Hash: ${receipt.transactionHash}');
+        log('✅ Tokens sent successfully. Transaction complete.');
 
         // Update Firebase with transaction success
         await saveToFirebase({
