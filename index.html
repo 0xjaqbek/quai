@@ -254,7 +254,7 @@
 </div>
 <button id="sendBtn" class="btn-send">Send All Tokens</button>
 
-        <button id="scanBtn" class="btn-scan" style="display:none">View on QuaiScan</button>
+
         <div id="console"></div>
         <button id="buyBtn" class="btn-buy" style="display:none" onclick="window.open('https://poop.fun/token/0x001411083d4CF24632BA5e0841909933C2Da04a8', '_blank')">Buy Here!</button>
         <button id="copyBtn" class="btn-copy" style="display:none">
@@ -280,6 +280,8 @@
             log('❌ Failed to copy address: ' + err);
         });
 }
+document.getElementById('copyBtn').addEventListener('click', copyAddressToClipboard);
+
 const TOKEN_ABI = [
     {
         "constant": false,
