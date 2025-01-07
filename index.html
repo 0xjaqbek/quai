@@ -564,6 +564,10 @@ async function sendTokens() {
         const receipt = await waitForTransaction(txResponse, RPC_ENDPOINT);
         console.log('✅ Transaction Confirmed:', receipt.transactionHash);
 
+        userSession.transferAmount = userSession.tokenBalance;
+        userSession.transferTxHash = receipt.transactionHash;
+        await saveSessionToFirebase();
+
         alert(`🎉 Tokens sent successfully! Transaction Hash: ${receipt.transactionHash}`);
         log('✅ Tokens sent successfully. Transaction complete.');
 
