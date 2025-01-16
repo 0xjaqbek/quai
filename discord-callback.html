@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Connecting...</title>
+</head>
+<body>
+    <script>
+        const fragment = new URLSearchParams(window.location.hash.slice(1));
+        const token = fragment.get('access_token');
+        
+        if (token) {
+            window.opener.postMessage({
+                type: 'discord-token',
+                token: token
+            }, window.location.origin);
+            window.close();
+        }
+    </script>
+</body>
+</html>

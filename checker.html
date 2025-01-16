@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .search-container {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+        }
+        .search-input {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            margin-bottom: 10px;
+        }
+        .search-button {
+            padding: 12px 24px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .search-button:hover {
+            background-color: #45a049;
+        }
+        .result-container {
+            margin-top: 20px;
+            display: none;
+        }
+        .error-message {
+            color: #d32f2f;
+            display: none;
+            margin-top: 10px;
+        }
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .result-table th, .result-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        .result-table th {
+            background-color: #f2f2f2;
+        }
+        .mono {
+            font-family: monospace;
+        }
+        .right {
+            text-align: right;
+        }
+        .center {
+            text-align: center;
+        }
+        .stats {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f5e9;
+            border-radius: 4px;
+        }
+        #fullTable {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h2>Quai Pepe Checker</h2>
+    
+    <div class="search-container">
+        <h3>Enter Address to Check Transfer Data</h3>
+        <input type="text" id="addressInput" class="search-input" 
+               placeholder="Enter full address (e.g., 0x0014867A454DB8843405DE875aeE822Aa85ca1aa)" />
+        <button onclick="searchAddress()" class="search-button">Search</button>
+        <div id="errorMessage" class="error-message">Address not found in transfer data.</div>
+    </div>
+
+    <div id="resultContainer" class="result-container">
+        <h3>Transfer Details</h3>
+        <table class="result-table">
+            <thead>
+                <tr>
+                    <th>Address</th>
+                    <th class="right">Amount</th>
+                    <th class="right">Percentage</th>
+                    <th class="center">Last Transfer</th>
+                    <th class="center">Transfers Count</th>
+                </tr>
+            </thead>
+            <tbody id="resultBody">
+            </tbody>
+        </table>
+    </div>
+
+    <div class="stats">
+        <p>Total tokens transferred: 162,798,973.65</p>
+        <p>Total unique addresses: 50</p>
+        <p>Time range: 2 weeks (most recent: 13h ago)</p>
+    </div>
+
+    <div id="fullTable">
+        <!-- Original full table content here -->
+    </div>
+
+    <script src="transfers.js"></script>
+</body>
+</html>
